@@ -102,6 +102,30 @@ By default, the script asks for confirmation if the confidence score is below 90
 | `-s, --source` | Force a specific API (`google`, `openlibrary`). |
 | `-v` | Verbose mode (debug). |
 
+## 🛠️ Debugging Tools
+
+The `tools/` directory contains useful standalone scripts to diagnose issues or test search results without modifying your files. They all accept a file path or a directory (defaults to `data/`).
+
+### 1. Inspector
+Displays all metadata found in an EPUB (useful to check if `title` or `isbn` is correctly extracted).
+```bash
+python tools/inspect.py "data/book.epub"
+# Or check all files in a folder:
+python tools/inspect.py data/
+```
+
+### 2. Search Tester
+Runs the search logic and shows what *would* be found online, including confidence scores.
+```bash
+python tools/search.py "data/book.epub"
+```
+
+### 3. Dry Run
+Simulates the full pipeline (Extraction -> Search -> Conversion -> Renaming -> Upload) but stops before writing any changes to disk or cloud.
+```bash
+python tools/dry_run.py data/
+```
+
 ## 📦 Architecture
 
 *   `src/pipeline/`: Orchestration (Orchestrator, EpubManager, DriveUploader).

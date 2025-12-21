@@ -54,9 +54,9 @@ class Formatter:
                 )
                 print(f"  Series:    {curated['series']}{index_str}")
 
-            if curated["subjects"]:
-                tags = ", ".join(curated["subjects"][:5])
-                if len(curated["subjects"]) > 5:
+            if curated.get("tags"):
+                tags = ", ".join(curated["tags"][:5])
+                if len(curated["tags"]) > 5:
                     tags += "..."
                 print(f"  Tags:      {tags}")
 
@@ -134,3 +134,54 @@ class Formatter:
             Logger.info(f"Hits: {hits}", indent=7)
 
         print("-" * 60)
+
+    @staticmethod
+    def print_comparison(local_meta, remote_data):
+        """
+        Displays a side-by-side comparison of current vs new metadata.
+        """
+        print(f"   {'FIELD':<12} | {'CURRENT':<35} | {'NEW (PROPOSED)'}")
+        print("   " + "-" * 80)
+
+        # Helpers
+        def trunc(s, w=35):
+            s = str(s)
+            return (s[: w - 2] + "..") if len(s) > w else s
+
+        # Fields to compare
+        fields = [
+            ("Title", local_meta.get("title"), remote_data.get("title")),
+            (
+                "Author",
+                local_meta.get("author"),
+                ", ".join(remote_data.get("authors", [])),
+            ),
+            ("Publisher", local_meta.get("publisher"), remote_data.get("publisher")),
+            (
+                "Date",
+                str(local_meta.get("date"))[:10],
+                remote_data.get("publishedDate"),
+            ),
+            ("Language", local_meta.get("language"), remote_data.get("language")),
+        ]
+
+        # Calculate new ISBN to compare
+        new_isbn = "N/A"
+        if remote_data.get("industryIdentifiers"):
+            for i in remote_data["industryIdentifiers"]:
+                if i["type"] == "ISBN_13":
+                    new_isbn = i["identifier"]
+                    break
+        fields.append(("ISBN", local_meta.get("isbn"), new_isbn))
+
+        for label, old, new in fields:
+            # Highlight differences
+            old_str = trunc(old or "N/A")
+            new_str = trunc(new or "N/A")
+
+            diff_marker = " "
+            if old_str != new_str and new_str != "N/A":
+                diff_marker = "*"  # Could use color here if supported
+
+            print(f" {diff_marker} {label:<12} | {old_str:<35} | {new_str}")
+        print("   " + "-" * 80)

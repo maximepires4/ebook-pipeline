@@ -1,5 +1,6 @@
 import os
 import shutil
+import tempfile
 
 from src import config
 
@@ -25,8 +26,6 @@ class PipelineOrchestrator:
         self.auto_save = auto_save
         self.enable_kepub = enable_kepub
         self.enable_rename = enable_rename
-
-        # Handles final destination (Drive API or local folder)
         self.uploader = DriveUploader()
 
     def process_directory(self, directory):
@@ -35,7 +34,6 @@ class PipelineOrchestrator:
             Logger.error(f"Directory '{directory}' does not exist.")
             return
 
-        # Filter for standard EPUBs, ignoring already converted ones (*.kepub.epub)
         files = [f for f in os.listdir(directory) if f.lower().endswith(".epub")]
 
         if not files:
@@ -55,71 +53,69 @@ class PipelineOrchestrator:
 
     def process_file(self, file_path):
         """
-        Runs the full pipeline on a single file:
-        1. Extract local metadata
-        2. Search for better metadata online
-        3. Update file (if match found)
-        4. Convert to KEPUB (optional)
-        5. Rename file (optional)
-        6. Upload/Move to output
+        Runs the full pipeline securely using a temporary workspace.
+        Ensures the source file is never modified.
         """
-        # --- 1. Extraction ---
-        manager = EpubManager(file_path)
-        if not manager.book:
-            Logger.warning(f"Skipping (No Book): {file_path}")
-            return
+        with tempfile.TemporaryDirectory() as temp_dir:
+            filename = os.path.basename(file_path)
+            working_path = os.path.join(temp_dir, filename)
 
-        meta = manager.get_curated_metadata()
-        if not meta:
-            Logger.warning(f"Skipping (No Meta): {file_path}")
-            return
+            # --- 0. Secure Copy ---
+            try:
+                shutil.copy2(file_path, working_path)
+            except Exception as e:
+                Logger.error(f"Failed to copy file to temp dir: {e}")
+                return
 
-        Logger.info(
-            f"Processing: {meta.get('title', 'Unknown')} ({meta.get('filename', 'Unknown')})"
-        )
+            # --- 1. Extraction (from Copy) ---
+            manager = EpubManager(working_path)
+            if not manager.book:
+                Logger.warning(f"Skipping (No Book): {filename}")
+                return
 
-        # --- 2. Search ---
-        online_data, confidence, strategy, _ = find_book(meta)
+            meta = manager.get_curated_metadata()
+            if not meta:
+                Logger.warning(f"Skipping (No Meta): {filename}")
+                return
 
-        final_meta = meta
-        current_path = file_path
+            Logger.info(f"Processing: {meta.get('title', 'Unknown')} ({filename})")
 
-        # --- 3. Update ---
-        if online_data:
-            Formatter.print_search_result(online_data, confidence, strategy, 1)
+            # --- 2. Search ---
+            online_data, confidence, strategy, _ = find_book(meta)
 
-            if self._should_save(confidence):
-                self._update_metadata(manager, online_data)
-                # Update local meta dict for renaming purposes
-                final_meta = self._get_updated_meta_dict(meta, online_data)
-        else:
-            Logger.warning(
-                "No online match. Using local metadata for pipeline.", indent=4
-            )
+            final_meta = meta
+            current_path = working_path
 
-        # --- 4. Conversion ---
-        if self.enable_kepub:
-            current_path = self._handle_conversion(current_path)
+            # --- 3. Update (Modifies Copy) ---
+            if online_data:
+                Formatter.print_search_result(online_data, confidence, strategy, 1)
 
-        # --- 5. Renaming ---
-        if self.enable_rename:
-            current_path = self._handle_renaming(current_path, final_meta)
+                # Show explicit comparison before asking
+                Formatter.print_comparison(meta, online_data)
 
-        # --- 6. Upload ---
-        self.uploader.process_file(current_path)
+                if self._should_save(confidence):
+                    self._update_metadata(manager, online_data)
+                    final_meta = self._get_updated_meta_dict(meta, online_data)
+            else:
+                Logger.warning(
+                    "No online match. Using local metadata for pipeline.", indent=4
+                )
+
+            # --- 4. Renaming (Renames file in temp_dir) ---
+            if self.enable_rename:
+                current_path = self._handle_renaming(current_path, final_meta)
+
+            # --- 5. Conversion (Generates new file in temp_dir) ---
+            if self.enable_kepub:
+                current_path = self._handle_conversion(current_path)
+
+            # --- 6. Upload / Output (Moves from temp_dir to dest) ---
+            self.uploader.process_file(current_path)
 
     def _should_save(self, confidence):
-        """
-        Determines if the online result should be applied.
-        Logic:
-        1. Auto-save ON -> Always Yes.
-        2. High Confidence (>= 90%) -> Always Yes.
-        3. Low Confidence -> Ask the user interactively.
-        """
         if self.auto_save or confidence >= 90:
             return True
 
-        # Interactive Mode
         try:
             choice = (
                 input(
@@ -130,15 +126,12 @@ class PipelineOrchestrator:
             )
             return choice == "y"
         except EOFError:
-            # Handle cases where stdin is closed (e.g., non-interactive Docker without tty)
             return False
 
     def _update_metadata(self, manager, online_data):
-        """Applies online metadata and cover to the EPUB file."""
         Logger.info("Updating metadata...", indent=4)
         manager.update_metadata(online_data)
 
-        # Handle Cover
         if config.SHOW_COVER_LINK and online_data.get("imageLinks"):
             url = online_data["imageLinks"].get("thumbnail") or online_data[
                 "imageLinks"
@@ -154,7 +147,6 @@ class PipelineOrchestrator:
         Logger.success("EPUB saved.", indent=4)
 
     def _get_updated_meta_dict(self, original_meta, online_data):
-        """Merges original metadata with online results to create a clean dict for renaming."""
         new_meta = original_meta.copy()
         new_meta["title"] = online_data.get("title", original_meta["title"])
 
@@ -167,7 +159,6 @@ class PipelineOrchestrator:
         return new_meta
 
     def _handle_conversion(self, input_path):
-        """Converts EPUB to KEPUB using the external tool."""
         Logger.info("Converting to KEPUB...", indent=4)
         if not input_path.endswith(".kepub.epub"):
             kepub_path = input_path.replace(".epub", ".kepub.epub")
@@ -181,7 +172,6 @@ class PipelineOrchestrator:
             return input_path
 
     def _handle_renaming(self, current_path, meta):
-        """Renames the file based on metadata: 'Title - Author - Year'."""
         title = sanitize_filename(meta["title"])
         author = sanitize_filename(meta["author"])
         date_str = str(meta.get("date", ""))[:4]

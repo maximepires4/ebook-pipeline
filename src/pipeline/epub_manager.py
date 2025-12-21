@@ -1,12 +1,19 @@
 import os
 import argparse
+import warnings
 from typing import Optional, List, Any, Dict
 
-from ebooklib import epub
-
 from src.utils.isbn_utils import clean_isbn_string, extract_isbn_from_filename
+from src.utils.text_utils import format_author_sort
 from src.models import BookMetadata
 from src.utils.logger import Logger
+
+# Suppress annoying ebooklib warnings
+# Must be done BEFORE importing ebooklib
+warnings.filterwarnings("ignore", category=UserWarning, module="ebooklib")
+warnings.filterwarnings("ignore", category=FutureWarning, module="ebooklib")
+
+from ebooklib import epub  # type: ignore  # noqa: E402
 
 
 class EpubManager:
@@ -24,8 +31,9 @@ class EpubManager:
             # Attempt to read the EPUB file structure
             self.book = epub.read_epub(filepath)
         except Exception as e:
-            # Log parsing errors (often due to DRM or corrupted ZIPs)
-            Logger.error(f"Error reading EPUB: {e}")
+            Logger.warning(
+                f"Standard parsing failed ({e}). Switching to filename fallback."
+            )
             pass
 
     def get_raw_metadata(self) -> Dict[str, List[Dict[str, Any]]]:
@@ -54,7 +62,7 @@ class EpubManager:
         Implements fallback strategies for finding ISBNs (metadata vs filename).
         """
         if not self.book:
-            return None
+            return self._extract_from_filename()
 
         # Basic Dublin Core fields
         titles = self.book.get_metadata("DC", "title")
@@ -130,6 +138,44 @@ class EpubManager:
             tags=subjects,
         )
 
+    def _extract_from_filename(self) -> BookMetadata:
+        """
+        Fallback parser for filenames formatted like:
+        'Title -- Author -- Series -- Publisher -- ISBN -- ... .epub'
+        """
+        # Remove extension
+        name = os.path.splitext(self.filename)[0]
+
+        # Split by ' -- ' (standard Calibre export format?)
+        parts = name.split(" -- ")
+
+        title = parts[0] if len(parts) > 0 else "Unknown"
+        author = parts[1] if len(parts) > 1 else "Unknown"
+
+        # Clean up Author (Surname, Name -> Name Surname if needed, or keep as is)
+        # Here we just take the first part of "Surname, Name" if it looks like that
+        if ";" in author:
+            author = author.split(";")[0].strip()
+
+        isbn = extract_isbn_from_filename(self.filename)
+
+        # Try to guess other fields based on position if standard format
+        # This is a best-effort guess
+        publisher = parts[3] if len(parts) > 3 else None
+
+        return BookMetadata(
+            filename=self.filename,
+            title=title,
+            author=author,
+            isbn=isbn,
+            publisher=publisher,
+            language=None,
+            date=None,
+            series=None,
+            series_index=None,
+            tags=[],
+        )
+
     def _clear_metadata(self, namespace, name):
         """Helper to remove specific metadata entries directly from the internal dict."""
         if namespace in self.book.metadata and name in self.book.metadata[namespace]:
@@ -150,29 +196,54 @@ class EpubManager:
         self._clear_metadata("http://purl.org/dc/elements/1.1/", "date")
         self._clear_metadata("http://purl.org/dc/elements/1.1/", "description")
         self._clear_metadata("http://purl.org/dc/elements/1.1/", "subject")
+        self._clear_metadata("http://purl.org/dc/elements/1.1/", "language")
+        self._clear_metadata(
+            "http://purl.org/dc/elements/1.1/", "identifier"
+        )  # Careful with ID
 
+        # 1. Title
         if new_data.get("title"):
             self.book.set_title(new_data["title"])
 
+        # 2. Authors (with Sort Name)
         authors = new_data.get("authors", [])
         if isinstance(authors, str):
             authors = [authors]
-        for auth in authors:
-            self.book.add_author(auth)
 
-        # Using add_metadata because set_metadata is not standard in EbookLib
+        for auth in authors:
+            sort_name = format_author_sort(auth)
+            # Add author with file-as attribute for proper sorting
+            self.book.add_author(auth, file_as=sort_name, role="aut")
+
+        # 3. Publisher
         if new_data.get("publisher"):
             self.book.add_metadata("DC", "publisher", new_data["publisher"])
 
+        # 4. Date
         if new_data.get("publishedDate"):
             self.book.add_metadata("DC", "date", new_data["publishedDate"])
 
+        # 5. Language
+        if new_data.get("language"):
+            self.book.set_language(new_data["language"])
+
+        # 6. Description
         if new_data.get("description"):
             self.book.add_metadata("DC", "description", new_data["description"])
 
+        # 7. Tags / Subjects
         if new_data.get("categories"):
             for tag in new_data["categories"]:
                 self.book.add_metadata("DC", "subject", tag)
+
+        # 8. ISBN / Identifier
+        # We try to extract ISBN-13 from industryIdentifiers
+        if new_data.get("industryIdentifiers"):
+            for ident in new_data["industryIdentifiers"]:
+                # Google Books format: {'type': 'ISBN_13', 'identifier': '...'}
+                if ident.get("type") == "ISBN_13":
+                    self.book.set_identifier(ident["identifier"])
+                    break
 
     def set_cover(self, image_data):
         """Sets the cover image. EbookLib handles the manifest item creation."""

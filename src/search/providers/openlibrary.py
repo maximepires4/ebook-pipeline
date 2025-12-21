@@ -1,9 +1,9 @@
 import requests
-from typing import Optional, Tuple
+from typing import Optional, Tuple, cast
 from src import config
 from src.utils.logger import Logger
 from src.search.provider import MetadataProvider
-from src.models import SearchResult, BookMetadata
+from src.models import SearchResult, BookMetadata, ImageLinks
 
 
 class OpenLibraryProvider(MetadataProvider):
@@ -89,7 +89,7 @@ class OpenLibraryProvider(MetadataProvider):
             description=desc,
             pageCount=data.get("number_of_pages", 0),
             categories=[s["name"] for s in data.get("subjects", [])[:5]],
-            imageLinks=data.get("cover", {}),
+            imageLinks=cast(ImageLinks, data.get("cover", {})),
             industryIdentifiers=ids,
             link=data.get("url", ""),
             language="",  # Books API rarely provides normalized language codes
@@ -102,7 +102,7 @@ class OpenLibraryProvider(MetadataProvider):
         The structure is flatter and different from Books API.
         """
         cover_id = data.get("cover_i")
-        imgs = {}
+        imgs: dict = {}
         if cover_id:
             imgs = {
                 "thumbnail": f"https://covers.openlibrary.org/b/id/{cover_id}-M.jpg"
@@ -118,7 +118,7 @@ class OpenLibraryProvider(MetadataProvider):
             description="",  # Search API doesn't provide descriptions
             pageCount=data.get("number_of_pages_median", 0),
             categories=data.get("subject", [])[:5],
-            imageLinks=imgs,
+            imageLinks=cast(ImageLinks, imgs),
             industryIdentifiers=[],
             link=f"https://openlibrary.org{data.get('key')}" if data.get("key") else "",
             language=data.get("language", [""])[0],

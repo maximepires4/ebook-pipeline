@@ -3,18 +3,20 @@ import sys
 import os
 import argparse
 
+# Ensure project root is in path
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.pipeline.epub_manager import EpubManager
 from src.search.book_finder import find_book
+from src.utils.formatter import Formatter
 from src.utils.logger import Logger
 from src.utils.text_utils import sanitize_filename
 
 
 def process_file(file_path):
+    Logger.info(f"🚀 DRY RUN Pipeline for: {file_path}")
     print("-" * 60)
-    Logger.info(f"DRY RUN Pipeline for: {file_path}")
 
     # 1. Extraction
     manager = EpubManager(file_path)
@@ -32,8 +34,7 @@ def process_file(file_path):
 
     if data:
         Logger.info(f"2. [Search] Match Found ({score}%) via {strategy}")
-        print(f"   - New Title: {data['title']}")
-        print(f"   - New Author: {data['authors'][0]}")
+        Formatter.print_comparison(meta, data)
 
         # 3. Update Simulation
         Logger.info("3. [Update] WOULD update metadata in file.")
@@ -61,7 +62,7 @@ def process_file(file_path):
         date_str = "Unknown"
 
     new_filename = f"{title}-{author}-{date_str}.kepub.epub"
-    Logger.info(f"5. [Renaming] WOULD rename to:")
+    Logger.info("5. [Renaming] WOULD rename to:")
     print(f"   - {new_filename}")
 
     # 6. Upload Simulation
@@ -88,8 +89,9 @@ def main():
             Logger.warning(f"No EPUB files found in {args.path}")
             return
 
-        Logger.info(f"Simulating pipeline for {len(files)} files in {args.path}...")
+        Logger.info(f"📂 Simulating pipeline for {len(files)} files in {args.path}...")
         for f in files:
+            print("=" * 60)
             process_file(os.path.join(args.path, f))
     else:
         process_file(args.path)

@@ -1,38 +1,12 @@
-# Environments
-.venv
-.venv/
-venv/
-ENV/
-env/
-bin/
-lib/
-include/
-setuptools/
-
-# Python bytecode
 __pycache__/
-*.py[cod]
-*$py.class
-
-# Data (Contains ebooks)
-data/
-output/
-
-# OS generated files
+*.pyc
+.env
+.venv
+env/
+venv/
+data/*
+output/*
+work/*
+credentials.json
+token.json
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# IDEs
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Project specific
-*.log
-temp/

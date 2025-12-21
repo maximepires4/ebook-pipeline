@@ -38,3 +38,18 @@ def sanitize_filename(value):
     value = re.sub(r"[-\s]+", "-", value)
 
     return value
+
+
+def format_author_sort(author_name):
+    """
+    Converts 'First Last' to 'Last, First' for sorting purposes.
+    Simple heuristic: assumes the last word is the surname.
+    """
+    if not author_name or "," in author_name:
+        return author_name
+
+    parts = author_name.strip().split()
+    if len(parts) > 1:
+        # "Frank Herbert" -> "Herbert, Frank"
+        return f"{parts[-1]}, {' '.join(parts[:-1])}"
+    return author_name
