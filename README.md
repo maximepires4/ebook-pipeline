@@ -142,6 +142,12 @@ Simulates the full pipeline (Extraction -> Search -> Conversion -> Renaming -> U
 python -m tools.dry_run data/
 ```
 
+### 4. Uploader
+Manually uploads a file or folder to the configured Google Drive (useful for bulk uploads without processing).
+```bash
+python -m tools.upload path/to/files
+```
+
 ## 📦 Architecture
 
 *   `src/pipeline/`: Orchestration (Orchestrator, EpubManager, DriveUploader).
