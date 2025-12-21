@@ -15,8 +15,8 @@ from src.utils.text_utils import sanitize_filename
 
 
 def process_file(file_path):
-    Logger.info(f"🚀 DRY RUN Pipeline for: {file_path}")
     print("-" * 60)
+    Logger.info(f"DRY RUN Pipeline for: {file_path}")
 
     # 1. Extraction
     manager = EpubManager(file_path)
@@ -89,9 +89,8 @@ def main():
             Logger.warning(f"No EPUB files found in {args.path}")
             return
 
-        Logger.info(f"📂 Simulating pipeline for {len(files)} files in {args.path}...")
+        Logger.info(f"Simulating pipeline for {len(files)} files in {args.path}...")
         for f in files:
-            print("=" * 60)
             process_file(os.path.join(args.path, f))
     else:
         process_file(args.path)
