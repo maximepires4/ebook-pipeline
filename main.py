@@ -9,7 +9,7 @@ from src.pipeline.orchestrator import PipelineOrchestrator
 def main():
     parser = argparse.ArgumentParser(description="Full Ebook Pipeline.")
     parser.add_argument(
-        "directory", nargs="?", help="Directory containing ebook files."
+        "path", nargs="?", help="Directory or file to process."
     )
 
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose mode.")
@@ -30,6 +30,11 @@ def main():
         action="store_true",
         help="Auto-save metadata (skip confirmation for high confidence).",
     )
+    parser.add_argument(
+        "-i", "--interactive",
+        action="store_true",
+        help="Interactive mode: confirm each metadata field change manually."
+    )
 
     args = parser.parse_args()
 
@@ -44,23 +49,30 @@ def main():
         auto_save=args.auto,
         enable_kepub=not args.no_kepub,
         enable_rename=not args.no_rename,
+        interactive_fields=args.interactive
     )
 
-    data_dir = args.directory
-    if not data_dir:
+    target_path = args.path
+    if not target_path:
         try:
             print(f"Current working directory: {os.getcwd()}")
             default_dir = os.path.join(os.getcwd(), "data")
             user_input = input(
-                f"Enter directory to analyze [default: {default_dir}]: "
+                f"Enter file or directory to analyze [default: {default_dir}]: "
             ).strip()
-            data_dir = user_input if user_input else default_dir
+            target_path = user_input if user_input else default_dir
         except KeyboardInterrupt:
             print("\nGoodbye!")
             return
 
     try:
-        orchestrator.process_directory(data_dir)
+        if os.path.isfile(target_path):
+            Logger.info(f"🚀 Starting Pipeline on single file: {target_path}")
+            orchestrator.process_file(target_path)
+        elif os.path.isdir(target_path):
+            orchestrator.process_directory(target_path)
+        else:
+            Logger.error(f"Path not found: {target_path}")
     except KeyboardInterrupt:
         print("\nProcess stopped by user.")
     except Exception as e:

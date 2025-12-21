@@ -6,6 +6,7 @@ A complete automation tool to manage your ebook library (EPUB). It extracts meta
 
 *   **Metadata Enrichment**: Smart search on **Google Books** and **OpenLibrary** (automatic fallback if ISBN fails).
 *   **Interactive Review**: Asks for your confirmation if the match confidence is low (< 90%), so you never overwrite data blindly.
+*   **Granular Control**: Use `-i` mode to manually approve each field (Title, Author, Cover...) change individually.
 *   **Cover Management**: Automatically downloads and resizes the best available high-quality covers.
 *   **Kobo Optimization**: Automatic conversion to **KEPUB** format via [kepubify](https://github.com/pgaskin/kepubify).
 *   **Standardization**: Clean renaming of files (`Title - Author - Year`).
@@ -81,20 +82,34 @@ Files are copied to the `output/` directory. Use this if you sync via Dropbox, S
 ## 🎮 Usage
 
 ### Automatic Pipeline Mode
+Processes an entire folder or a single file.
 ```bash
 python main.py data
+# OR
+python main.py data/my_book.epub
 ```
 
 ### Interactive Mode
-By default, the script asks for confirmation if the confidence score is below 90%.
-*   **Green (90%+)**: Auto-save.
-*   **Yellow/Red**: Pauses and asks `Apply this metadata? [y/N]`.
+By default, the script asks for global confirmation if the confidence score is below 90%.
+
+*   **Granular Review (`-i`)**:
+    Review changes field by field (Title, Author, Date, Cover...).
+    ```bash
+    python main.py data -i
+    ```
+
+*   **Force Auto (`--auto`)**:
+    Skip all confirmations (Batch mode).
+    ```bash
+    python main.py data --auto
+    ```
 
 ### Command Line Options
 
 | Argument | Description |
 | :--- | :--- |
-| `directory` | Directory containing EPUBs (default: `data`). |
+| `path` | Directory or file to process (default: `data`). |
+| `-i, --interactive` | Granular review mode (confirm each field). |
 | `--drive PATH` | Sets the local sync folder (Mode B). |
 | `--no-kepub` | Disables KEPUB conversion. |
 | `--no-rename` | Disables renaming. |
@@ -104,26 +119,27 @@ By default, the script asks for confirmation if the confidence score is below 90
 
 ## 🛠️ Debugging Tools
 
-The `tools/` directory contains useful standalone scripts to diagnose issues or test search results without modifying your files. They all accept a file path or a directory (defaults to `data/`).
+The `tools/` directory contains useful standalone scripts to diagnose issues without modifying your files.
+**Note:** Run them as modules (`python -m tools.xxx`) to avoid import errors.
 
 ### 1. Inspector
-Displays all metadata found in an EPUB (useful to check if `title` or `isbn` is correctly extracted).
+Displays all metadata found in an EPUB.
 ```bash
-python tools/inspect.py "data/book.epub"
+python -m tools.inspect "data/book.epub"
 # Or check all files in a folder:
-python tools/inspect.py data/
+python -m tools.inspect data/
 ```
 
 ### 2. Search Tester
 Runs the search logic and shows what *would* be found online, including confidence scores.
 ```bash
-python tools/search.py "data/book.epub"
+python -m tools.search "data/book.epub"
 ```
 
 ### 3. Dry Run
 Simulates the full pipeline (Extraction -> Search -> Conversion -> Renaming -> Upload) but stops before writing any changes to disk or cloud.
 ```bash
-python tools/dry_run.py data/
+python -m tools.dry_run data/
 ```
 
 ## 📦 Architecture
