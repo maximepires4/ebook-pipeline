@@ -110,6 +110,9 @@ class PipelineOrchestrator:
                 if approved_data:
                     self._update_metadata(manager, approved_data)
                     final_meta = self._get_updated_meta_dict(meta, approved_data)
+                else:
+                    Logger.warning("Skipping file (Metadata update rejected by user).")
+                    return
             else:
                 Logger.warning(
                     "No online match. Using local metadata for pipeline.", indent=4
@@ -270,7 +273,8 @@ class PipelineOrchestrator:
         else:
             ext = ".epub"
 
-        new_filename = f"{title}-{author}-{date_str}{ext}"
+        # Use underscore to separate metadata fields
+        new_filename = f"{title}_{author}_{date_str}{ext}"
         new_path = os.path.join(os.path.dirname(current_path), new_filename)
 
         if new_path != current_path:

@@ -32,12 +32,13 @@ def sanitize_filename(value):
         unicodedata.normalize("NFD", value).encode("ascii", "ignore").decode("ascii")
     )
 
-    # Remove unwanted characters
+    # Remove unwanted characters (keep alphanumeric, space, hyphen)
     value = re.sub(r"[^\w\s-]", "", value).strip().lower()
-    # Replace spaces and multiple hyphens with single hyphen
+    # Replace spaces (including tabs, non-breaking) and multiple hyphens with single hyphen
     value = re.sub(r"[-\s]+", "-", value)
-
-    return value
+    
+    # Final safety check to remove any remaining spaces
+    return value.replace(" ", "-")
 
 
 def format_author_sort(author_name):

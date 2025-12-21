@@ -257,7 +257,12 @@ class EpubManager:
             return
         if not output_path:
             output_path = self.filepath
-        epub.write_epub(output_path, self.book, {})
+        
+        try:
+            epub.write_epub(output_path, self.book, {})
+        except Exception as e:
+            Logger.error(f"Failed to write EPUB (likely corrupted structure): {e}")
+            raise e
 
 
 if __name__ == "__main__":
