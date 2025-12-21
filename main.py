@@ -1,55 +1,60 @@
+import argparse
 import os
-import ebooklib
-from ebooklib import epub
-import warnings
-
-# Suppress warnings from ebooklib regarding recent xml libraries if any
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", category=FutureWarning)
-
-def get_metadata(epub_path):
-    try:
-        book = epub.read_epub(epub_path)
-        
-        # Title
-        # get_metadata returns a list of tuples (value, attributes)
-        titles = book.get_metadata('DC', 'title')
-        title_str = titles[0][0] if titles else "Unknown Title"
-        
-        # Author
-        creators = book.get_metadata('DC', 'creator')
-        author_str = creators[0][0] if creators else "Unknown Author"
-
-        # Language
-        langs = book.get_metadata('DC', 'language')
-        lang_str = langs[0][0] if langs else "Unknown Language"
-
-        print(f"File: {os.path.basename(epub_path)}")
-        print(f"  Title:    {title_str}")
-        print(f"  Author:   {author_str}")
-        print(f"  Language: {lang_str}")
-        print("-" * 40)
-
-    except Exception as e:
-        print(f"Error reading {os.path.basename(epub_path)}: {e}")
+import sys
+from src import config
+from src.utils.logger import Logger
+from src.pipeline.orchestrator import PipelineOrchestrator
 
 def main():
-    data_dir = 'data'
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-        print(f"Created directory '{data_dir}'.")
-
-    files = [f for f in os.listdir(data_dir) if f.lower().endswith('.epub')]
+    parser = argparse.ArgumentParser(description="Full Ebook Pipeline.")
+    parser.add_argument('directory', nargs='?', help="Directory containing ebook files.")
     
-    if not files:
-        print(f"No .epub files found in '{data_dir}/'.")
-        print("Please place an .epub file in the 'data' folder and run this script again.")
-        return
+    # Options
+    parser.add_argument('-v', '--verbose', action='store_true', help="Verbose mode.")
+    parser.add_argument('-s', '--source', choices=['all', 'google', 'openlibrary'], default='all', help="Metadata Source.")
+    parser.add_argument('--no-kepub', action='store_true', help="Disable KEPUB conversion.")
+    parser.add_argument('--no-rename', action='store_true', help="Disable renaming.")
+    parser.add_argument('--drive', help="Path to Google Drive sync folder.")
+    parser.add_argument('--auto', action='store_true', help="Auto-save metadata (skip confirmation for high confidence).")
 
-    print(f"Found {len(files)} epub file(s) in '{data_dir}':\n")
-    for f in files:
-        path = os.path.join(data_dir, f)
-        get_metadata(path)
+    args = parser.parse_args()
+
+    # --- 1. Configuration ---
+    # Injection des arguments CLI dans la configuration globale
+    config.VERBOSE = args.verbose
+    if args.source != 'all': 
+        config.API_SOURCE = args.source
+    
+    # --- 2. Initialisation ---
+    # On délègue la logique métier à l'orchestrateur
+    orchestrator = PipelineOrchestrator(
+        auto_save=args.auto,
+        enable_kepub=not args.no_kepub,
+        enable_rename=not args.no_rename,
+        drive_folder=args.drive
+    )
+
+    # --- 3. Sélection du dossier ---
+    data_dir = args.directory
+    if not data_dir:
+        # Interaction simple si aucun argument fourni
+        try:
+            print(f"Current working directory: {os.getcwd()}")
+            default_dir = os.path.join(os.getcwd(), 'data')
+            user_input = input(f"Enter directory to analyze [default: {default_dir}]: ").strip()
+            data_dir = user_input if user_input else default_dir
+        except KeyboardInterrupt:
+            print("\nGoodbye!")
+            return
+
+    # --- 4. Exécution ---
+    try:
+        orchestrator.process_directory(data_dir)
+    except KeyboardInterrupt:
+        print("\n🛑 Process stopped by user.")
+    except Exception as e:
+        Logger.error(f"Unexpected error: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
