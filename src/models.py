@@ -1,38 +1,52 @@
-from typing import TypedDict, List, Optional, Dict, Any
+from typing import TypedDict, List, Optional, Dict
+
 
 class ImageLinks(TypedDict, total=False):
+    """Standardized structure for image URLs returned by APIs."""
+
     smallThumbnail: str
     thumbnail: str
     small: str
     medium: str
     large: str
 
+
 class BookMetadata(TypedDict, total=False):
-    """Structure standardisée des métadonnées internes."""
+    """
+    Internal representation of a book's metadata.
+    Used for both extracted local data (EpubManager) and finalized data.
+    """
+
     title: str
     author: str
     isbn: Optional[str]
     publisher: Optional[str]
-    date: Optional[str]  # Format YYYY-MM-DD ou YYYY
+    date: Optional[str]  # Format: YYYY-MM-DD or YYYY
     language: Optional[str]
     description: Optional[str]
     series: Optional[str]
     series_index: Optional[float]
     tags: List[str]
-    filename: str  # Nom du fichier source
+    filename: str  # Source filename for reference
+
 
 class SearchResult(TypedDict, total=False):
-    """Structure normalisée des résultats de recherche (Google/OpenLibrary)."""
+    """
+    Normalized structure for search results from external providers (Google/OpenLibrary).
+    Ensures consistent data access regardless of the source API.
+    """
+
     title: str
     authors: List[str]
     publishedDate: str
     description: str
-    industryIdentifiers: List[Dict[str, str]]  # [{'type': 'ISBN_13', 'identifier': '...'}]
+    industryIdentifiers: List[
+        Dict[str, str]
+    ]  # e.g. [{'type': 'ISBN_13', 'identifier': '...'}]
     pageCount: int
     categories: List[str]
     imageLinks: ImageLinks
     publisher: str
     language: str
-    # Champs spécifiques provider
-    provider_id: str 
-    link: str
+    provider_id: str  # Unique ID from the provider (e.g. Google Books ID)
+    link: str  # URL to the book's page

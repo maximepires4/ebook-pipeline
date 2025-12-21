@@ -1,21 +1,27 @@
 class MetadataProvider:
-    """Interface abstraite pour les fournisseurs de métadonnées."""
-    
+    """
+    Abstract Base Class (Interface) for all metadata providers (Google, OpenLibrary, etc.).
+    Enforces a consistent API for the BookFinder to use.
+    """
+
     @property
     def name(self):
-        """Nom du provider (ex: 'Google Books')."""
+        """Returns the display name of the provider."""
         raise NotImplementedError
 
     def get_by_isbn(self, isbn):
         """
-        Cherche par ISBN.
-        Retourne (data, total_items) ou (None, 0).
+        Fetches metadata using a specific ISBN.
+        Returns: (SearchResult | None, total_hits: int)
         """
         raise NotImplementedError
 
     def search_by_text(self, meta, context):
         """
-        Cherche par texte en utilisant le contexte (title, author, etc.)
-        Retourne (data, total_items) ou (None, 0).
+        Searches using loose text criteria (Title, Author, etc.).
+        Args:
+            meta: Local BookMetadata object.
+            context: Dictionary defining which fields to use in the query (e.g. {'pub': True}).
+        Returns: (SearchResult | None, total_hits: int)
         """
         raise NotImplementedError

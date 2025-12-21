@@ -1,58 +1,58 @@
-# Guide des Métadonnées Ebook (EPUB)
+# Ebook Metadata Guide (EPUB)
 
-Ce document détaille les métadonnées standard (Dublin Core) et spécifiques (OPF/Calibre) nécessaires pour construire une bibliothèque numérique parfaitement triée et identifiée.
+This document details the standard metadata (Dublin Core) and specific metadata (OPF/Calibre) required to build a perfectly sorted and identified digital library.
 
-## 1. Identification Unique (La Clé)
-Ces métadonnées servent à lier le fichier à une fiche livre unique (pour récupérer couverture, résumé, etc.).
+## 1. Unique Identification (The Key)
+These metadata serve to link the file to a unique book record (to retrieve cover, summary, etc.).
 
-| Champ | Balise XML (OPF) | Importance | Description |
+| Field | XML Tag (OPF) | Importance | Description |
 | :--- | :--- | :--- | :--- |
-| **Identifiant** | `dc:identifier` | **CRITIQUE** | L'empreinte unique du livre. |
-| *Type* | `opf:scheme="ISBN"` | **CRITIQUE** | L'ISBN-13 (ex: `9782226494887`) est le standard absolu pour l'identification. |
-| **Éditeur** | `dc:publisher` | Haute | Permet de distinguer les éditions (ex: "Albin Michel" vs "Livre de Poche"). |
+| **Identifier** | `dc:identifier` | **CRITICAL** | The unique fingerprint of the book. |
+| *Type* | `opf:scheme="ISBN"` | **CRITICAL** | ISBN-13 (e.g., `9782226494887`) is the absolute standard for identification. |
+| **Publisher** | `dc:publisher` | High | Helps distinguish editions (e.g., "Penguin" vs "Oxford"). |
 
 ---
 
-## 2. Tri et Organisation (Le Classement)
-Ces métadonnées déterminent l'ordre d'affichage dans les listes. Sans elles, "Victor Hugo" est classé à la lettre **V**.
+## 2. Sorting and Organization (The Ranking)
+These metadata determine the display order in lists. Without them, "Victor Hugo" might be sorted under **V**.
 
-### Auteur (Creator)
-*   **Affichage** : `dc:creator`
-    *   *Valeur* : `Yuval Noah Harari`
-*   **Tri** : `opf:file-as` (Attribut)
-    *   *Valeur* : `Harari, Yuval Noah`
-    *   *Rôle* : Permet le tri par Nom de famille.
+### Author (Creator)
+*   **Display**: `dc:creator`
+    *   *Value*: `Yuval Noah Harari`
+*   **Sort**: `opf:file-as` (Attribute)
+    *   *Value*: `Harari, Yuval Noah`
+    *   *Role*: Allows sorting by Last Name.
 
-### Titre (Title)
-*   **Affichage** : `dc:title`
-    *   *Valeur* : `Les Misérables`
-*   **Tri** : `opf:file-as` (Attribut - optionnel mais recommandé)
-    *   *Valeur* : `Miserables, Les`
-    *   *Rôle* : Permet d'ignorer les articles définis/indéfinis lors du tri.
+### Title (Title)
+*   **Display**: `dc:title`
+    *   *Value*: `The Miserables`
+*   **Sort**: `opf:file-as` (Attribute - optional but recommended)
+    *   *Value*: `Miserables, The`
+    *   *Role*: Allows ignoring definite/indefinite articles during sorting.
 
-### Séries (Sagas)
-Le standard Dublin Core ne gère pas nativement les séries. On utilise souvent des balises `<meta>` personnalisées (standard de facto Calibre).
-*   **Nom de la série** : `<meta name="calibre:series" content="Harry Potter"/>`
-*   **Index** : `<meta name="calibre:series_index" content="1.0"/>`
+### Series (Sagas)
+The Dublin Core standard does not natively handle series. Custom `<meta>` tags (de facto Calibre standard) are often used.
+*   **Series Name**: `<meta name="calibre:series" content="Harry Potter"/>`
+*   **Index**: `<meta name="calibre:series_index" content="1.0"/>`
 
 ---
 
-## 3. Découverte et Navigation
-Pour la recherche, le filtrage et l'expérience utilisateur.
+## 3. Discovery and Navigation
+For search, filtering, and user experience.
 
-| Champ | Balise XML | Description |
+| Field | XML Tag | Description |
 | :--- | :--- | :--- |
-| **Sujets / Tags** | `dc:subject` | Mots-clés multiples (ex: "Histoire", "Science", "Anthropologie"). |
-| **Langue** | `dc:language` | Code ISO (ex: `fr`, `en-US`). Essentiel pour filtrer par langue. |
-| **Date** | `dc:date` | Date de publication (souvent juste l'année ou YYYY-MM-DD). |
-| **Description** | `dc:description` | Le résumé ou la quatrième de couverture. |
+| **Subjects / Tags** | `dc:subject` | Multiple keywords (e.g., "History", "Science", "Anthropology"). |
+| **Language** | `dc:language` | ISO Code (e.g., `fr`, `en-US`). Essential for filtering by language. |
+| **Date** | `dc:date` | Publication date (often just the year or YYYY-MM-DD). |
+| **Description** | `dc:description` | The summary or blurb. |
 
 ---
 
-## Résumé Technique pour l'Implémentation
+## Technical Summary for Implementation
 
-Lors de l'analyse d'un fichier EPUB, la priorité d'extraction doit être :
+When analyzing an EPUB file, the extraction priority should be:
 
-1.  **Récupérer `dc:identifier` où `scheme="ISBN"`** -> C'est la source de vérité.
-2.  **Récupérer `dc:creator` ET son attribut `opf:file-as`** -> Pour construire un index d'auteurs propre.
-3.  **Récupérer `meta name="calibre:series"`** -> Pour regrouper les tomes.
+1.  **Retrieve `dc:identifier` where `scheme="ISBN"`** -> This is the source of truth.
+2.  **Retrieve `dc:creator` AND its attribute `opf:file-as`** -> To build a clean author index.
+3.  **Retrieve `meta name="calibre:series"`** -> To group volumes.

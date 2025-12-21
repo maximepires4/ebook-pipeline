@@ -2,25 +2,39 @@ import difflib
 import re
 import unicodedata
 
+
 def get_similarity(s1, s2):
-    """Calcule la similarité entre deux chaînes (0.0 à 1.0)."""
+    """
+    Calculates the Levenshtein similarity ratio between two strings.
+    Returns a float between 0.0 (no match) and 1.0 (perfect match).
+    Case-insensitive.
+    """
     if not s1 or not s2:
         return 0.0
     return difflib.SequenceMatcher(None, s1.lower(), s2.lower()).ratio()
 
+
 def sanitize_filename(value):
     """
-    Nettoie une chaîne pour qu'elle soit utilisable comme nom de fichier.
-    Remplace les caractères interdits et supprime les accents.
+    Converts a string into a safe filename:
+    1. Normalizes unicode characters (e.g., é -> e).
+    2. Removes non-alphanumeric characters (except - and _).
+    3. Replaces whitespace with hyphens.
+    4. Converts to lowercase.
+
+    Example: "L'Étranger!" -> "letranger"
     """
     if not value:
         return "Unknown"
-    
-    # Normalisation Unicode (NFD pour séparer les accents)
-    value = unicodedata.normalize('NFD', value).encode('ascii', 'ignore').decode('ascii')
-    
-    # Remplacement des caractères non-alphanumériques (sauf - _ .)
-    value = re.sub(r'[^\w\s-]', '', value).strip().lower()
-    value = re.sub(r'[-\s]+', '-', value) # Remplace les espaces multiples par un tiret
-    
+
+    # Normalize unicode to ASCII (NFD split -> drop non-spacing mark)
+    value = (
+        unicodedata.normalize("NFD", value).encode("ascii", "ignore").decode("ascii")
+    )
+
+    # Remove unwanted characters
+    value = re.sub(r"[^\w\s-]", "", value).strip().lower()
+    # Replace spaces and multiple hyphens with single hyphen
+    value = re.sub(r"[-\s]+", "-", value)
+
     return value

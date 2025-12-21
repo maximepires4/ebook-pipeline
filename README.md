@@ -1,119 +1,121 @@
 # 📚 Ebook Super Pipeline
 
-Un outil d'automatisation complet pour gérer votre bibliothèque d'ebooks (EPUB). Il extrait les métadonnées, enrichit les informations via des APIs en ligne, convertit les fichiers pour Kobo (KEPUB) et peut les publier directement sur Google Drive.
+A complete automation tool to manage your ebook library (EPUB). It extracts metadata, enriches information via online APIs, converts files for Kobo (KEPUB), and can publish them directly to Google Drive.
 
-## 🚀 Fonctionnalités Clés
+## 🚀 Key Features
 
-*   **Enrichissement de Métadonnées** : Recherche intelligente sur **Google Books** et **OpenLibrary** (fallback automatique si l'ISBN échoue).
-*   **Gestion des Couvertures** : Télécharge et redimensionne automatiquement les meilleures couvertures disponibles.
-*   **Optimisation Kobo** : Conversion automatique au format **KEPUB** via [kepubify](https://github.com/pgaskin/kepubify).
-*   **Standardisation** : Renommage propre des fichiers (`Titre - Auteur - Année`).
-*   **Drive & KoboCloud** : Upload natif via l'API Google Drive ou copie locale pour synchronisation tierce.
+*   **Metadata Enrichment**: Smart search on **Google Books** and **OpenLibrary** (automatic fallback if ISBN fails).
+*   **Interactive Review**: Asks for your confirmation if the match confidence is low (< 90%), so you never overwrite data blindly.
+*   **Cover Management**: Automatically downloads and resizes the best available high-quality covers.
+*   **Kobo Optimization**: Automatic conversion to **KEPUB** format via [kepubify](https://github.com/pgaskin/kepubify).
+*   **Standardization**: Clean renaming of files (`Title - Author - Year`).
+*   **Drive & KoboCloud**: Native upload via Google Drive API or local copy for third-party synchronization.
 
 ## 🛠️ Installation
 
-### 1. Prérequis Système
-Ce projet nécessite l'outil `kepubify` pour la conversion Kobo. Pour des raisons de sécurité, le téléchargement automatique est désactivé.
+### 1. System Prerequisites
+This project requires the `kepubify` tool for Kobo conversion.
 
-1.  Téléchargez la dernière version depuis [pgaskin/kepubify](https://github.com/pgaskin/kepubify/releases).
-2.  Placez le binaire dans votre `PATH` système (recommandé) ou à la racine de ce projet.
-3.  Renommez-le simplement `kepubify` (ou `kepubify.exe` sur Windows) et rendez-le exécutable (`chmod +x kepubify`).
+1.  Download the latest version from [pgaskin/kepubify](https://github.com/pgaskin/kepubify/releases).
+2.  Place the binary in your system `PATH` (recommended) or at the root of this project.
+3.  Rename it simply to `kepubify` (or `kepubify.exe` on Windows) and make it executable (`chmod +x kepubify`).
 
-### 2. Installation Python
+### 2. Python Installation
 ```bash
-git clone https://github.com/votre-repo/ebook-metadata.git
+git clone https://github.com/your-repo/ebook-metadata.git
 cd ebook-metadata
 pip install -r requirements.txt
 ```
 
 ### 3. Configuration (.env)
-Copiez le modèle :
+Copy the template:
 ```bash
 cp .env.example .env
 ```
 
-## 🐳 Utilisation avec Docker (Recommandé)
+## 🐳 Usage with Docker (Recommended)
 
-L'image Docker contient déjà toutes les dépendances, y compris `kepubify`. C'est la méthode la plus simple et la plus propre.
+The Docker image contains all dependencies (including `kepubify`) and runs securely as a non-root user.
 
-1.  **Préparer les fichiers**
-    *   Placez vos `.epub` dans le dossier `data/`.
-    *   Configurez votre `.env` et vos `credentials.json` à la racine.
+1.  **Prepare files**
+    *   Place your `.epub` files in the `data/` directory.
+    *   Configure your `.env` and `credentials.json` (if using Drive) at the root.
 
-2.  **Lancer le pipeline**
+2.  **Run the pipeline**
     ```bash
     docker-compose up --build
     ```
 
-Le conteneur va traiter les livres, les uploader (si configuré) ou les déposer dans `output/`, puis s'arrêter.
+**Note:** The container is configured with `tty: true` to allow interactive confirmation (`y/n`) for low-confidence matches directly in your terminal.
 
-## ☁️ Intégration KoboCloud
+## ☁️ KoboCloud Integration
 
-Ce projet est le compagnon idéal de [KoboCloud](https://github.com/fsantini/KoboCloud). Voici le flux de travail automatisé :
+This project is the ideal companion for [KoboCloud](https://github.com/fsantini/KoboCloud).
 
-1.  **Le "Feeder" (Ce projet)** :
-    *   Vous déposez un livre brut dans `data/`.
-    *   Le script nettoie les métadonnées, télécharge la couverture HD et convertit en **KEPUB**.
-    *   Il upload le résultat final dans un dossier Google Drive dédié (ex: `Ebooks/Processed`).
+1.  **The "Feeder" (This project)**:
+    *   Processes books in `data/`.
+    *   Cleans metadata, fetches HD covers, converts to **KEPUB**.
+    *   Uploads the result to a specific Google Drive folder.
 
-2.  **Le "Reader" (Votre Kobo)** :
-    *   Installez KoboCloud sur votre liseuse (voir leur documentation).
-    *   Dans le fichier de configuration KoboCloud (`kobocloudrc`), ajoutez le lien de partage public de votre dossier Google Drive `Ebooks/Processed`.
+2.  **The "Reader" (Your Kobo)**:
+    *   Install KoboCloud on your device.
+    *   Add the public share link of your Drive folder to `kobocloudrc`.
 
-**Résultat** : Vos livres apparaissent automatiquement sur votre liseuse, avec des couvertures parfaites, des résumés complets et le format rapide KEPUB, sans jamais brancher de câble USB.
+**Result**: Your books appear wirelessly on your Kobo, perfectly formatted.
 
-## ☁️ Configuration Google Drive (Optionnel)
+## ☁️ Google Drive Configuration
 
-L'outil propose deux modes de fonctionnement pour l'export :
+### Mode A: Google Drive API (Recommended)
+Direct upload via the official API. Requires OAuth2.
 
-### Mode A : API Google Drive (Recommandé)
-Upload direct via l'API officielle. Nécessite une configuration OAuth2.
+1.  Enable **Google Drive API** in [Google Cloud Console](https://console.cloud.google.com/).
+2.  Create **OAuth 2.0 Client IDs** (Desktop App).
+3.  Save the JSON as `credentials.json` in the project root.
+4.  Set `ENABLE_DRIVE_UPLOAD=True` in `.env`.
 
-1.  Activez l'API **Google Drive** dans la [Google Cloud Console](https://console.cloud.google.com/).
-2.  Créez des identifiants **OAuth 2.0 Client ID** (Type: Desktop App).
-3.  Téléchargez le fichier JSON, renommez-le `credentials.json` et placez-le à la racine du projet.
-4.  Dans `.env`, mettez `ENABLE_DRIVE_UPLOAD=True`.
+*On the first run (even in Docker), you will be asked to authenticate via a URL.*
 
-### Mode B : Copie Locale (Par défaut)
-Les fichiers traités sont copiés dans le dossier `output/` du projet.
-Utile si vous utilisez déjà un client de synchro (Google Drive Desktop, rclone, Syncthing).
+### Mode B: Local Copy (Default)
+Files are copied to the `output/` directory. Use this if you sync via Dropbox, Syncthing, or a mounted Drive client.
 
-## 🎮 Utilisation
+## 🎮 Usage
 
-### Mode Pipeline Automatique
-Traite tout un dossier : enrichit, convertit, renomme et exporte.
-
+### Automatic Pipeline Mode
 ```bash
 python main.py data
 ```
 
-La première fois (en Mode A), une fenêtre s'ouvrira pour autoriser l'accès à votre Drive.
+### Interactive Mode
+By default, the script asks for confirmation if the confidence score is below 90%.
+*   **Green (90%+)**: Auto-save.
+*   **Yellow/Red**: Pauses and asks `Apply this metadata? [y/N]`.
 
-### Options de Ligne de Commande
+### Command Line Options
 
 | Argument | Description |
 | :--- | :--- |
-| `directory` | Dossier contenant les EPUBs (défaut: `data`). |
-| `--no-kepub` | Désactive la conversion KEPUB. |
-| `--no-rename` | Désactive le renommage. |
-| `--auto` | Sauvegarde automatique sans confirmation (confiance > 90%). |
-| `-s, --source` | Force une API (`google`, `openlibrary`). |
-| `-v` | Mode verbeux (debug). |
+| `directory` | Directory containing EPUBs (default: `data`). |
+| `--drive PATH` | Sets the local sync folder (Mode B). |
+| `--no-kepub` | Disables KEPUB conversion. |
+| `--no-rename` | Disables renaming. |
+| `--auto` | **Force auto-save** (skips all confirmation prompts). |
+| `-s, --source` | Force a specific API (`google`, `openlibrary`). |
+| `-v` | Verbose mode (debug). |
 
 ## 📦 Architecture
 
-*   `src/pipeline/` : Orchestration et manipulations (EpubManager, KepubHandler, DriveUploader).
-*   `src/search/` : Moteur de recherche (BookFinder) et connecteurs API.
-*   `src/utils/` : Outils transverses.
-*   `src/config.py` : Configuration centralisée.
-*   `src/models.py` : Définitions de types et structures de données.
+*   `src/pipeline/`: Orchestration (Orchestrator, EpubManager, DriveUploader).
+*   `src/search/`: Logic for finding books (Waterfall strategy).
+*   `src/models.py`: Type definitions (`BookMetadata`, `SearchResult`).
+*   `src/config.py`: Configuration registry.
 
-## 🔒 Sécurité
+## 🔒 Security
 
-*   **Vérification Binaire** : Le téléchargement de binaires externes est désactivé pour éviter les attaques supply-chain.
-*   **Gestion des Secrets** : Les tokens OAuth2 sont stockés localement (`token.json`) et ne doivent pas être committés.
+*   **Binary Verification**: Downloads `kepubify` from a specific version/URL in Docker.
+*   **Least Privilege**: Docker container runs as `appuser` (UID 1000).
+*   **Secrets**: OAuth tokens are stored locally (`token.json`) and ignored by git.
 
-## 🔗 Crédits
+## 🔗 Credits
 
-*   **Kepubify** : [pgaskin/kepubify](https://github.com/pgaskin/kepubify)
-*   **APIs** : Google Books API & OpenLibrary.
+*   **Kepubify**: [pgaskin/kepubify](https://github.com/pgaskin/kepubify)
+*   **APIs**: Google Books API & OpenLibrary.
