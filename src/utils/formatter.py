@@ -1,3 +1,4 @@
+import termcolor
 from src import config
 from src.utils.logger import Logger
 
@@ -25,7 +26,7 @@ class Formatter:
             # Debug view: Raw XML tags
             raw = manager.get_raw_metadata()
             if not raw:
-                Logger.warning("No metadata found.", indent=2)
+                Logger.warning("No metadata found.")
             for key, items in raw.items():
                 for item in items:
                     attr_str = f" {item['attrs']}" if item["attrs"] else ""
@@ -63,41 +64,28 @@ class Formatter:
         print("-" * 60)
 
     @staticmethod
-    def print_search_result(data, score, strategy, hits):
+    def print_search_result(data, score, strategy):
         """
         Prints the result of an online search with a visual confidence indicator.
         """
         if not data:
             Logger.error("No match found online.")
-            print("-" * 60)
             return
 
-        # Visual Traffic Light system for confidence
-        color = (
-            "🟢"
-            if score > config.CONFIDENCE_THRESHOLD_HIGH
-            else "🟡"
-            if score > config.CONFIDENCE_THRESHOLD_MEDIUM
-            else "🔴"
-        )
+        Logger.info(f"MATCH FOUND (Score: {score}%) via {strategy}")
 
-        Logger.info(f"{color} MATCH FOUND (Score: {score}%) via {strategy}", indent=4)
-
-        Logger.info(f"Title:     {data.get('title', 'N/A')}", indent=7)
+        Logger.info(f"Title:     {data.get('title', 'N/A')}")
 
         if config.SHOW_SUBTITLE and data.get("subtitle"):
-            Logger.info(f"Subtitle:  {data['subtitle']}", indent=7)
+            Logger.info(f"Subtitle:  {data['subtitle']}")
 
-        Logger.info(f"Authors:   {', '.join(data.get('authors', ['N/A']))}", indent=7)
-        Logger.info(f"Publisher: {data.get('publisher', 'N/A')}", indent=7)
-        Logger.info(f"Date:      {data.get('publishedDate', 'N/A')}", indent=7)
-
-        if config.SHOW_PAGE_COUNT and data.get("pageCount"):
-            Logger.info(f"Pages:     {data['pageCount']}", indent=7)
+        Logger.info(f"Authors:   {', '.join(data.get('authors', ['N/A']))}")
+        Logger.info(f"Publisher: {data.get('publisher', 'N/A')}")
+        Logger.info(f"Date:      {data.get('publishedDate', 'N/A')}")
 
         if config.SHOW_CATEGORIES and data.get("categories"):
             cats = ", ".join(data["categories"])
-            Logger.info(f"Genres:    {cats}", indent=7)
+            Logger.info(f"Genres:    {cats}")
 
         if config.SHOW_IDENTIFIERS and data.get("industryIdentifiers"):
             ids = [
@@ -106,13 +94,13 @@ class Formatter:
                 if "ISBN" in i["type"]
             ]
             if ids:
-                Logger.info(f"IDs:       {', '.join(ids)}", indent=7)
+                Logger.info(f"IDs:       {', '.join(ids)}")
 
         if config.SHOW_DESCRIPTION and data.get("description"):
             desc = data["description"].replace("\n", " ")
             if len(desc) > 150:
                 desc = desc[:150] + "..."
-            Logger.info(f"Summary:   {desc}", indent=7)
+            Logger.info(f"Summary:   {desc}")
 
         if config.SHOW_LINKS:
             link = (
@@ -121,17 +109,14 @@ class Formatter:
                 or data.get("canonicalVolumeLink")
             )
             if link:
-                Logger.info(f"Link:      {link}", indent=7)
+                Logger.info(f"Link:      {link}")
 
         if config.SHOW_COVER_LINK and data.get("imageLinks"):
             cover = data["imageLinks"].get("thumbnail") or data["imageLinks"].get(
                 "smallThumbnail"
             )
             if cover:
-                Logger.info(f"Cover:     {cover}", indent=7)
-
-        if config.VERBOSE and hits > 1:
-            Logger.info(f"Hits: {hits}", indent=7)
+                Logger.info(f"Cover:     {cover}")
 
     @staticmethod
     def print_comparison(local_meta, remote_data):
@@ -140,6 +125,8 @@ class Formatter:
         """
         print(f"   {'FIELD':<12} | {'CURRENT':<35} | {'NEW (PROPOSED)'}")
         print("   " + "-" * 80)
+
+        # TODO: Other changes like description
 
         # Helpers
         def trunc(s, w=35):
@@ -163,7 +150,7 @@ class Formatter:
             ("Language", local_meta.get("language"), remote_data.get("language")),
         ]
 
-        # Calculate new ISBN to compare
+        # TODO: Better handle ISBN
         new_isbn = "N/A"
         if remote_data.get("industryIdentifiers"):
             for i in remote_data["industryIdentifiers"]:
@@ -172,14 +159,18 @@ class Formatter:
                     break
         fields.append(("ISBN", local_meta.get("isbn"), new_isbn))
 
+        # TODO: Better handle empty values
         for label, old, new in fields:
-            # Highlight differences
             old_str = trunc(old or "N/A")
             new_str = trunc(new or "N/A")
 
-            diff_marker = " "
             if old_str != new_str and new_str != "N/A":
-                diff_marker = "*"  # Could use color here if supported
-
-            print(f" {diff_marker} {label:<12} | {old_str:<35} | {new_str}")
+                print(
+                    termcolor.colored(
+                        f" {label:<12} | {old_str:<35} | {new_str}",
+                        attrs=["bold"],
+                    )
+                )
+            else:
+                print(f" {label:<12} | {old_str:<35} | {new_str}")
         print("   " + "-" * 80)

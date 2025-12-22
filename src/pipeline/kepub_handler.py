@@ -39,17 +39,14 @@ class KepubHandler:
                          If omitted, defaults to source name + .kepub.epub suffix.
         """
         if input_path.lower().endswith(".kepub.epub"):
-            Logger.warning("Skipping conversion (already KEPUB).", indent=4)
+            Logger.warning("Skipping conversion (already KEPUB).")
             return True
 
         binary = KepubHandler.get_binary_path()
         if not binary:
-            Logger.error("'kepubify' not found in PATH.", indent=4)
-            Logger.info(
-                "Please install it from: https://github.com/pgaskin/kepubify",
-                indent=4,
-            )
-            Logger.info("Or ensure it is in your system PATH.", indent=4)
+            Logger.error("'kepubify' not found in PATH.")
+            Logger.info("Please install it from: https://github.com/pgaskin/kepubify")
+            Logger.info("Or ensure it is in your system PATH.")
             return False
 
         if not output_path:
@@ -63,14 +60,12 @@ class KepubHandler:
 
         try:
             subprocess.run(cmd, capture_output=True, text=True, check=True)
-            Logger.success(
-                f"Converted to KEPUB: {os.path.basename(output_path)}", indent=4
-            )
+            Logger.success(f"Converted to KEPUB: {os.path.basename(output_path)}")
             return True
 
         except subprocess.CalledProcessError as e:
-            Logger.error(f"kepubify failed: {e.stderr.strip()}", indent=4)
+            Logger.error(f"kepubify failed: {e.stderr.strip()}")
             return False
         except Exception as e:
-            Logger.error(f"Conversion error: {e}", indent=4)
+            Logger.error(f"Conversion error: {e}")
             return False

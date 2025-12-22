@@ -63,7 +63,7 @@ class OpenLibraryProvider(MetadataProvider):
             if data.get("docs"):
                 return self._normalize_search(data["docs"][0]), data.get("numFound", 0)
         except Exception as e:
-            Logger.verbose(f"[OL] Search Error: {e}", indent=4)
+            Logger.verbose(f"[OL] Search Error: {e}")
         return None, 0
 
     def _normalize_isbn(self, data: dict) -> SearchResult:
@@ -87,7 +87,6 @@ class OpenLibraryProvider(MetadataProvider):
             publisher=data.get("publishers", [{"name": "Unknown"}])[0]["name"],
             publishedDate=data.get("publish_date", "Unknown"),
             description=desc,
-            pageCount=data.get("number_of_pages", 0),
             categories=[s["name"] for s in data.get("subjects", [])[:5]],
             imageLinks=cast(ImageLinks, data.get("cover", {})),
             industryIdentifiers=ids,
@@ -116,7 +115,6 @@ class OpenLibraryProvider(MetadataProvider):
             else "Unknown",
             publishedDate=str(data.get("first_publish_year", "Unknown")),
             description="",  # Search API doesn't provide descriptions
-            pageCount=data.get("number_of_pages_median", 0),
             categories=data.get("subject", [])[:5],
             imageLinks=cast(ImageLinks, imgs),
             industryIdentifiers=[],

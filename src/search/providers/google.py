@@ -67,10 +67,10 @@ class GoogleBooksProvider(MetadataProvider):
                 if e.response.status_code in [500, 502, 503, 504, 429]:
                     time.sleep(2**attempt)
                 else:
-                    Logger.verbose(f"[Google] HTTP Error: {e}", indent=4)
+                    Logger.verbose(f"[Google] HTTP Error: {e}")
                     return None, 0
             except Exception as e:
-                Logger.verbose(f"[Google] Connection error: {e}", indent=4)
+                Logger.verbose(f"[Google] Connection error: {e}")
                 return None, 0
         return None, 0
 
@@ -131,7 +131,6 @@ class GoogleBooksProvider(MetadataProvider):
             publisher=data.get("publisher", "Unknown"),
             publishedDate=data.get("publishedDate", "Unknown"),
             description=data.get("description", ""),
-            pageCount=data.get("pageCount", 0),
             categories=data.get("categories", []),
             imageLinks=data.get("imageLinks", {}),
             industryIdentifiers=data.get("industryIdentifiers", []),

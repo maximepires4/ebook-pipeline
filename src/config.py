@@ -23,7 +23,6 @@ def get_bool_env(key, default=False):
 # Controls the destination of processed files.
 # If True, uploads to Google Drive via API.
 # If False, copies to local 'output/' directory.
-ENABLE_DRIVE_UPLOAD = get_bool_env("ENABLE_DRIVE_UPLOAD", False)
 
 # OAuth2 Credentials paths
 GOOGLE_CREDENTIALS_PATH = os.getenv("GOOGLE_CREDENTIALS_PATH", "credentials.json")
@@ -33,10 +32,6 @@ GOOGLE_TOKEN_PATH = os.getenv("GOOGLE_TOKEN_PATH", "token.json")
 # Can be found in the URL of the folder: drive.google.com/drive/folders/<ID>
 DRIVE_FOLDER_ID = os.getenv("DRIVE_FOLDER_ID")
 
-# --- Legacy Sync (Deprecated) ---
-# Used for older local sync methods (e.g. rclone mount)
-DRIVE_SYNC_FOLDER = os.getenv("DRIVE_SYNC_FOLDER")
-
 # --- Metadata Sources ---
 # Controls which APIs are queried.
 # Options: 'google', 'openlibrary', 'all'
@@ -45,6 +40,7 @@ API_SOURCE = os.getenv("API_SOURCE", "all")
 # --- Pipeline Features ---
 ENABLE_KEPUBIFY = get_bool_env("ENABLE_KEPUBIFY", True)
 ENABLE_RENAME = get_bool_env("ENABLE_RENAME", True)
+UPDATE_COVER = get_bool_env("UPDATE_COVER", True)
 # If True, applies changes automatically without asking, even for low confidence.
 AUTO_SAVE = get_bool_env("AUTO_SAVE", False)
 
@@ -54,8 +50,7 @@ FULL_OUTPUT = get_bool_env("FULL_OUTPUT", False)  # Dumps full JSON response
 
 # Toggles for specific fields in the console output
 SHOW_SUBTITLE = True
-SHOW_DESCRIPTION = get_bool_env("SHOW_DESCRIPTION", True)
-SHOW_PAGE_COUNT = True
+SHOW_DESCRIPTION = True
 SHOW_CATEGORIES = True
 SHOW_COVER_LINK = True
 SHOW_LINKS = True
@@ -75,6 +70,6 @@ REQUEST_TIMEOUT = 10  # Seconds
 MAX_RETRIES = 3  # Exponential backoff attempts
 
 # --- Confidence Thresholds ---
-# Scores (0-100) determining the visual indicator (Green/Yellow/Red)
 CONFIDENCE_THRESHOLD_HIGH = 80
 CONFIDENCE_THRESHOLD_MEDIUM = 50
+CONFIDENCE_THRESHOLD_LOW = 40

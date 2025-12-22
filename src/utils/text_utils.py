@@ -36,7 +36,7 @@ def sanitize_filename(value):
     value = re.sub(r"[^\w\s-]", "", value).strip().lower()
     # Replace spaces (including tabs, non-breaking) and multiple hyphens with single hyphen
     value = re.sub(r"[-\s]+", "-", value)
-    
+
     # Final safety check to remove any remaining spaces
     return value.replace(" ", "-")
 
@@ -54,3 +54,14 @@ def format_author_sort(author_name):
         # "Frank Herbert" -> "Herbert, Frank"
         return f"{parts[-1]}, {' '.join(parts[:-1])}"
     return author_name
+
+
+def truncate(text, max_length=100, suffix="..."):
+    """
+    Truncates a string to a maximum length.
+    If the string is longer than the max length, it will be truncated and the suffix will be appended.
+    If the suffix is not provided, it will be set to "...".
+    """
+    if len(text) > max_length:
+        return text[:max_length] + suffix
+    return text

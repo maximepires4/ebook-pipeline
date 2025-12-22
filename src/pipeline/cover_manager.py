@@ -20,14 +20,14 @@ class CoverManager:
             return None
 
         try:
-            Logger.verbose(f"Downloading cover from {url}...", indent=4)
+            Logger.verbose(f"Downloading cover from {url}...")
             # User-Agent is important to avoid 403 Forbidden from some CDNs
             headers = {"User-Agent": "Mozilla/5.0"}
             response = requests.get(url, headers=headers, timeout=10)
             response.raise_for_status()
             return response.content
         except Exception as e:
-            Logger.warning(f"Failed to download cover: {e}", indent=4)
+            Logger.warning(f"Failed to download cover: {e}")
             return None
 
     @staticmethod
@@ -60,5 +60,5 @@ class CoverManager:
             return output.getvalue()
 
         except Exception as e:
-            Logger.warning(f"Failed to process cover image: {e}", indent=4)
+            Logger.warning(f"Failed to process cover image: {e}")
             return None

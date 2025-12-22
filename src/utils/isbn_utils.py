@@ -23,6 +23,8 @@ def extract_isbn_from_filename(filename):
     Attempts to find an ISBN-like pattern in a filename.
     Prioritizes ISBN-13 over ISBN-10.
     """
+    # TODO: Add support for ISBN-13 with hyphens
+
     # Regex for ISBN-13 (starts with 978 or 979, followed by 10 digits)
     isbn13_match = re.search(r"\b(97[89]\d{10})\b", filename)
     if isbn13_match:

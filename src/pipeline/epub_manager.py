@@ -31,10 +31,8 @@ class EpubManager:
             # Attempt to read the EPUB file structure
             self.book = epub.read_epub(filepath)
         except Exception as e:
-            Logger.warning(
-                f"Standard parsing failed ({e}). Switching to filename fallback."
-            )
-            pass
+            Logger.error(f"Standard parsing failed ({e}).")
+            raise e
 
     def get_raw_metadata(self) -> Dict[str, List[Dict[str, Any]]]:
         """
@@ -62,7 +60,7 @@ class EpubManager:
         Implements fallback strategies for finding ISBNs (metadata vs filename).
         """
         if not self.book:
-            return self._extract_from_filename()
+            return None
 
         # Basic Dublin Core fields
         titles = self.book.get_metadata("DC", "title")
@@ -82,6 +80,7 @@ class EpubManager:
                 if "scheme" in k.lower():
                     scheme = v.lower()
                     break
+            print(f"HERE scheme: {scheme}")
             if "isbn" in scheme or (
                 c_val.isdigit()
                 and len(c_val) in [10, 13]
@@ -104,22 +103,6 @@ class EpubManager:
         pub_dates = self.book.get_metadata("DC", "date")
         date = pub_dates[0][0] if pub_dates else None
 
-        # Custom Metadata (Calibre Series)
-        # These are stored in the default namespace, not Dublin Core
-        series = None
-        series_index = None
-
-        for _, name_dict in self.book.metadata.items():
-            for name, items in name_dict.items():
-                if name == "series":
-                    series = items[0][0]
-                elif name == "series_index":
-                    try:
-                        if items and items[0][0] is not None:
-                            series_index = float(items[0][0])
-                    except (ValueError, TypeError):
-                        pass
-
         subjects = []
         subj_items = self.book.get_metadata("DC", "subject")
         for s, _ in subj_items:
@@ -133,47 +116,7 @@ class EpubManager:
             publisher=publisher,
             language=language,
             date=str(date) if date else None,
-            series=series,
-            series_index=series_index,
             tags=subjects,
-        )
-
-    def _extract_from_filename(self) -> BookMetadata:
-        """
-        Fallback parser for filenames formatted like:
-        'Title -- Author -- Series -- Publisher -- ISBN -- ... .epub'
-        """
-        # Remove extension
-        name = os.path.splitext(self.filename)[0]
-
-        # Split by ' -- ' (standard Calibre export format?)
-        parts = name.split(" -- ")
-
-        title = parts[0] if len(parts) > 0 else "Unknown"
-        author = parts[1] if len(parts) > 1 else "Unknown"
-
-        # Clean up Author (Surname, Name -> Name Surname if needed, or keep as is)
-        # Here we just take the first part of "Surname, Name" if it looks like that
-        if ";" in author:
-            author = author.split(";")[0].strip()
-
-        isbn = extract_isbn_from_filename(self.filename)
-
-        # Try to guess other fields based on position if standard format
-        # This is a best-effort guess
-        publisher = parts[3] if len(parts) > 3 else None
-
-        return BookMetadata(
-            filename=self.filename,
-            title=title,
-            author=author,
-            isbn=isbn,
-            publisher=publisher,
-            language=None,
-            date=None,
-            series=None,
-            series_index=None,
-            tags=[],
         )
 
     def _clear_metadata(self, namespace, name):

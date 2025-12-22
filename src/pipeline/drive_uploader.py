@@ -20,11 +20,12 @@ class DriveUploader:
     Also provides a fallback mechanism to copy files locally if the API is disabled.
     """
 
-    def __init__(self):
+    def __init__(self, enable_upload=True):
         self.service = None
         self.creds = None
+        self.enable_upload = enable_upload and config.DRIVE_FOLDER_ID is not None
 
-        if config.ENABLE_DRIVE_UPLOAD:
+        if self.enable_upload:
             self._authenticate()
 
     def _authenticate(self):
@@ -71,12 +72,10 @@ class DriveUploader:
                         creds = flow.run_local_server(port=0)
                     except Exception:
                         Logger.warning(
-                            "Browser authentication failed (Docker/Headless detected?).",
-                            indent=4,
+                            "Browser authentication failed (Docker/Headless detected?)."
                         )
                         Logger.info(
-                            "Switching to Console Mode. Please visit this URL to authorize:",
-                            indent=4,
+                            "Switching to Console Mode. Please visit this URL to authorize:"
                         )
                         # Fallback for headless environments (like Docker)
                         creds = flow.run_console()
@@ -100,10 +99,14 @@ class DriveUploader:
         Main entry point. Decides whether to upload to Cloud or copy locally
         based on configuration.
         """
-        if config.ENABLE_DRIVE_UPLOAD:
-            return self.upload_to_drive(file_path)
-        else:
-            return self.copy_to_local_output(file_path)
+        try:
+            if self.enable_upload:
+                return self.upload_to_drive(file_path)
+        except Exception as e:
+            Logger.error(f"Drive upload failed: {e}")
+            Logger.info("Falling back to local copy.")
+
+        return self.copy_to_local_output(file_path)
 
     def upload_to_drive(self, file_path: str):
         """Uploads a file to Google Drive using a resumable upload session."""
@@ -123,7 +126,7 @@ class DriveUploader:
             file_metadata["parents"] = [config.DRIVE_FOLDER_ID]
 
         try:
-            Logger.info(f"☁️  Uploading to Drive: {file_name}...", indent=4)
+            Logger.info(f"Uploading to Drive: {file_name}...")
 
             media = MediaFileUpload(
                 file_path, mimetype="application/epub+zip", resumable=True
@@ -138,15 +141,13 @@ class DriveUploader:
             while response is None:
                 status, response = request.next_chunk()
                 if status:
-                    Logger.verbose(
-                        f"Uploaded {int(status.progress() * 100)}%", indent=6
-                    )
+                    Logger.verbose(f"Uploaded {int(status.progress() * 100)}%")
 
-            Logger.success(f"Upload complete. File ID: {response.get('id')}", indent=4)
+            Logger.success(f"Upload complete. File ID: {response.get('id')}")
             return True
 
         except Exception as e:
-            Logger.error(f"Drive upload failed: {e}", indent=4)
+            Logger.error(f"Drive upload failed: {e}")
             return False
 
     def copy_to_local_output(self, file_path: str):
@@ -162,11 +163,11 @@ class DriveUploader:
             if os.path.abspath(file_path) == os.path.abspath(dest_path):
                 return True
 
-            Logger.info(f"📂 Copying to output: {dest_path}", indent=4)
+            Logger.info(f"Copying to output: {dest_path}")
             shutil.copy2(file_path, dest_path)
-            Logger.success("Copy complete.", indent=4)
+            Logger.success("Copy complete.")
             return True
 
         except Exception as e:
-            Logger.error(f"Local copy failed: {e}", indent=4)
+            Logger.error(f"Local copy failed: {e}")
             return False

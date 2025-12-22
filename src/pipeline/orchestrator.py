@@ -1,6 +1,7 @@
 import os
 import shutil
 import tempfile
+import termcolor
 
 from src import config
 
@@ -9,7 +10,7 @@ from src.pipeline.cover_manager import CoverManager
 from src.pipeline.kepub_handler import KepubHandler
 from src.pipeline.drive_uploader import DriveUploader
 
-from src.utils.text_utils import sanitize_filename
+from src.utils.text_utils import sanitize_filename, truncate
 from src.utils.logger import Logger
 from src.utils.formatter import Formatter
 
@@ -28,12 +29,13 @@ class PipelineOrchestrator:
         enable_kepub=True,
         enable_rename=True,
         interactive_fields=False,
+        enable_upload=True,
     ):
         self.auto_save = auto_save
         self.enable_kepub = enable_kepub
         self.enable_rename = enable_rename
         self.interactive_fields = interactive_fields
-        self.uploader = DriveUploader()
+        self.uploader = DriveUploader(enable_upload)
 
     def process_directory(self, directory):
         """Batch processes all EPUB files in a given directory."""
@@ -55,7 +57,7 @@ class PipelineOrchestrator:
             try:
                 self.process_file(path)
             except Exception as e:
-                Logger.error(f"Critical error processing {f}: {e}")
+                raise e
             print("-" * 60)
 
     def process_file(self, file_path, forced_isbn=None):
@@ -74,8 +76,9 @@ class PipelineOrchestrator:
                 Logger.error(f"Failed to copy file to temp dir: {e}")
                 return
 
-            manager = EpubManager(working_path)
-            if not manager.book:
+            try:
+                manager = EpubManager(working_path)
+            except Exception:
                 Logger.warning(f"Skipping (No Book): {filename}")
                 return
 
@@ -85,18 +88,20 @@ class PipelineOrchestrator:
                 return
 
             if forced_isbn:
-                Logger.info(f"Using Forced ISBN: {forced_isbn}", indent=4)
+                Logger.info(f"Using Forced ISBN: {forced_isbn}")
                 meta["isbn"] = forced_isbn
 
-            Logger.info(f"Processing: {meta.get('title', 'Unknown')} ({filename})")
+            Logger.info(
+                f"Processing: {meta.get('title', 'Unknown')} ({truncate(filename)})"
+            )
 
-            online_data, confidence, strategy, _ = find_book(meta)
+            online_data, confidence, strategy = find_book(meta)
 
             final_meta = meta
             current_path = working_path
 
             if online_data:
-                Formatter.print_search_result(online_data, confidence, strategy, 1)
+                Formatter.print_search_result(online_data, confidence, strategy)
 
                 approved_data = None
 
@@ -114,16 +119,13 @@ class PipelineOrchestrator:
                     final_meta = self._get_updated_meta_dict(meta, approved_data)
                 elif self.interactive_fields:
                     Logger.info(
-                        "No metadata changes selected. Continuing with local metadata.",
-                        indent=4,
+                        "No metadata changes selected. Continuing with local metadata."
                     )
                 else:
                     Logger.warning("Skipping file (Metadata update rejected by user).")
                     return
             else:
-                Logger.warning(
-                    "No online match. Using local metadata for pipeline.", indent=4
-                )
+                Logger.warning("No online match. Using local metadata for pipeline.")
 
             # --- 4. Renaming ---
             if self.enable_rename:
@@ -133,16 +135,17 @@ class PipelineOrchestrator:
             if self.enable_kepub:
                 current_path = self._handle_conversion(current_path)
 
+            # --- 6. Upload ---
             self.uploader.process_file(current_path)
 
     def _should_save(self, confidence):
-        if self.auto_save or confidence >= 90:
+        if self.auto_save or confidence >= config.CONFIDENCE_THRESHOLD_HIGH:
             return True
 
         try:
             choice = (
                 input(
-                    f"   ? Low confidence ({confidence}%). Apply this metadata? [y/N]: "
+                    f"   [?] Low confidence ({confidence}%). Apply this metadata? [y/N]: "
                 )
                 .strip()
                 .lower()
@@ -157,6 +160,7 @@ class PipelineOrchestrator:
         Returns a dict containing ONLY the approved changes.
         """
         print("\n   --- Interactive Metadata Review ---")
+        print("y = apply change, e = edit value, else skip\n")
         approved = {}
 
         def clean(v):
@@ -171,6 +175,8 @@ class PipelineOrchestrator:
             ("Description", "description", "description"),
         ]
 
+        # TODO: Multiple authors
+
         for label, l_key, r_key in fields:
             local_val = clean(local_meta.get(l_key)).strip()
             remote_val = clean(remote_data.get(r_key)).strip()
@@ -181,13 +187,21 @@ class PipelineOrchestrator:
                     continue
 
             if local_val != remote_val and remote_val:
-                print(f"   [?] {label}:")
-                print(f"      Current: {local_val}")
-                print(f"      New:     {remote_val}")
-                choice = input("      Apply change? [y/N]: ").strip().lower()
+                print(
+                    f"   [?] ({label})",
+                    termcolor.colored(f"{local_val or 'N/A'}", attrs=["bold"]),
+                    "->",
+                    termcolor.colored(f"{remote_val or 'N/A'}", attrs=["bold"]),
+                    end=" ",
+                )
+                choice = input("[y/e/N]: ").strip().lower()
                 if choice == "y":
                     approved[r_key] = remote_data[r_key]
+                elif choice == "e":
+                    new_val = input("   Edit value: ").strip()
+                    approved[r_key] = new_val
 
+        # TODO: Clean for multiple authors
         # Author (List vs String)
         local_auth = clean(local_meta.get("author"))
         remote_auths = remote_data.get("authors", [])
@@ -206,27 +220,28 @@ class PipelineOrchestrator:
                 approved["authors"] = remote_auths
 
         # Cover
-        if remote_data.get("imageLinks"):
-            print("   [?] Cover found online.")
-            choice = input("      Download and update cover? [y/N]: ").strip().lower()
+        if config.UPDATE_COVER and remote_data.get("imageLinks"):
+            choice = (
+                input("    [?] Cover found online, download and update? [y/N]: ")
+                .strip()
+                .lower()
+            )
             if choice == "y":
                 approved["imageLinks"] = remote_data["imageLinks"]
 
-        print("   -----------------------------------")
         if not approved:
-            Logger.info("   No changes applied.")
             return None
 
         return approved
 
     def _update_metadata(self, manager, online_data):
-        Logger.info("Updating metadata...", indent=4)
+        Logger.info("Updating metadata...")
         manager.update_metadata(online_data)
 
         if True:
-            # DEBUG: Show cover link
+            # TODO: Fix cover update
             Logger.warning("DEBUG: Skipping cover update.")
-        elif config.SHOW_COVER_LINK and online_data.get("imageLinks"):
+        elif config.UPDATE_COVER and online_data.get("imageLinks"):
             url = online_data["imageLinks"].get("thumbnail") or online_data[
                 "imageLinks"
             ].get("smallThumbnail")
@@ -238,7 +253,7 @@ class PipelineOrchestrator:
                     Logger.success("Cover updated.", indent=4)
 
         manager.save()
-        Logger.success("EPUB saved.", indent=4)
+        Logger.success("EPUB saved.")
 
     def _get_updated_meta_dict(self, original_meta, online_data):
         new_meta = original_meta.copy()
@@ -259,7 +274,7 @@ class PipelineOrchestrator:
         return new_meta
 
     def _handle_conversion(self, input_path):
-        Logger.info("Converting to KEPUB...", indent=4)
+        Logger.info("Converting to KEPUB...")
         if not input_path.endswith(".kepub.epub"):
             kepub_path = input_path.replace(".epub", ".kepub.epub")
         else:
@@ -268,31 +283,31 @@ class PipelineOrchestrator:
         if KepubHandler.convert_to_kepub(input_path, kepub_path):
             return kepub_path
         else:
-            Logger.warning("Conversion failed. Using standard EPUB.", indent=4)
+            Logger.warning("Conversion failed. Using standard EPUB.")
             return input_path
 
     def _handle_renaming(self, current_path, meta):
         title = sanitize_filename(meta["title"])
         author = sanitize_filename(meta["author"])
         date_str = str(meta.get("date", ""))[:4]
-        if not date_str or date_str == "None":
-            date_str = "Unknown"
 
         if current_path.endswith(".kepub.epub"):
             ext = ".kepub.epub"
         else:
             ext = ".epub"
 
-        # Use underscore to separate metadata fields
-        new_filename = f"{title}_{author}_{date_str}{ext}"
+        if not date_str or date_str == "None":
+            new_filename = f"{title}_{author}{ext}"
+        else:
+            new_filename = f"{title}_{author}_{date_str}{ext}"
         new_path = os.path.join(os.path.dirname(current_path), new_filename)
 
         if new_path != current_path:
             try:
                 shutil.move(current_path, new_path)
-                Logger.info(f"Renamed to: {new_filename}", indent=4)
+                Logger.info(f"Renamed to: {new_filename}")
                 return new_path
             except Exception as e:
-                Logger.error(f"Rename failed: {e}", indent=4)
+                Logger.error(f"Rename failed: {e}")
 
         return current_path
