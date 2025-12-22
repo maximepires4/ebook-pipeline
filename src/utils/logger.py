@@ -1,5 +1,6 @@
 from src import config
 import json
+import termcolor
 
 
 class Logger:
@@ -11,28 +12,28 @@ class Logger:
     @staticmethod
     def info(msg, indent=0):
         """Standard info message."""
-        print(" " * indent + msg)
+        print(msg)
 
     @staticmethod
     def verbose(msg, indent=0):
         """Debug message, only shown if VERBOSE config is True."""
         if config.VERBOSE:
-            print(" " * indent + msg)
+            print(termcolor.colored("VERBOSE", "cyan") + f": {msg}")
 
     @staticmethod
     def success(msg, indent=0):
         """Success message with checkmark icon."""
-        print(" " * indent + f"✅ {msg}")
+        print(termcolor.colored("SUCCESS", "green") + f": {msg}")
 
     @staticmethod
     def warning(msg, indent=0):
         """Warning message with alert icon."""
-        print(" " * indent + f"⚠️  {msg}")
+        print(termcolor.colored("WARNING", "yellow") + f": {msg}")
 
     @staticmethod
     def error(msg, indent=0):
         """Error message with cross icon."""
-        print(" " * indent + f"❌ {msg}")
+        print(termcolor.colored("ERROR", "red") + f": {msg}")
 
     @staticmethod
     def full_json(data, indent=0):
@@ -42,7 +43,6 @@ class Logger:
         Only shown if FULL_OUTPUT config is True.
         """
         if config.FULL_OUTPUT:
-            json_str = json.dumps(data, indent=4, ensure_ascii=False)
-            indented_lines = [" " * indent + line for line in json_str.split("\n")]
-            print(" " * indent + "[FULL OUTPUT]")
-            print("\n".join(indented_lines))
+            json_str = json.dumps(data, ensure_ascii=False)
+            print("[FULL OUTPUT]")
+            print(json_str)

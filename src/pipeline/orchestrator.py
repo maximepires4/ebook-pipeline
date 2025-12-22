@@ -223,7 +223,10 @@ class PipelineOrchestrator:
         Logger.info("Updating metadata...", indent=4)
         manager.update_metadata(online_data)
 
-        if config.SHOW_COVER_LINK and online_data.get("imageLinks"):
+        if True:
+            # DEBUG: Show cover link
+            Logger.warning("DEBUG: Skipping cover update.")
+        elif config.SHOW_COVER_LINK and online_data.get("imageLinks"):
             url = online_data["imageLinks"].get("thumbnail") or online_data[
                 "imageLinks"
             ].get("smallThumbnail")
@@ -293,4 +296,3 @@ class PipelineOrchestrator:
                 Logger.error(f"Rename failed: {e}", indent=4)
 
         return current_path
-

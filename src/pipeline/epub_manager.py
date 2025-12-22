@@ -231,24 +231,25 @@ class EpubManager:
                 self.book.add_metadata("DC", "subject", tag)
 
         # 8. ISBN / Identifier
-        # We try to extract ISBN-13 from industryIdentifiers
+        # Strategy: Add new ISBNs but DO NOT delete the primary unique identifier
+        # to avoid breaking the OPF structure (which causes "Document is empty").
         if new_data.get("industryIdentifiers"):
-            # Check if we have a valid ISBN before clearing old identifiers
-            has_isbn = False
             for ident in new_data["industryIdentifiers"]:
                 if ident.get("type") == "ISBN_13":
-                    has_isbn = True
-                    break
-            
-            if has_isbn:
-                # Careful: This removes ALL identifiers, including non-ISBNs. 
-                # Ideally we should only remove ISBNs, but ebooklib API is limited.
-                self._clear_metadata("http://purl.org/dc/elements/1.1/", "identifier")
-                
-                for ident in new_data["industryIdentifiers"]:
-                    if ident.get("type") == "ISBN_13":
-                        self.book.set_identifier(ident["identifier"])
-                        break
+                    # Check if this ISBN already exists to avoid duplicates
+                    current_ids = self.book.get_metadata("DC", "identifier")
+                    exists = False
+                    for val, attr in current_ids:
+                        if val == ident["identifier"]:
+                            exists = True
+                            break
+
+                    if not exists:
+                        # Add as a new identifier with scheme attribute
+                        self.book.add_metadata(
+                            "DC", "identifier", ident["identifier"], {"scheme": "ISBN"}
+                        )
+                    break  # Only add the first ISBN-13 found
 
     def set_cover(self, image_data):
         """Sets the cover image. EbookLib handles the manifest item creation."""
@@ -257,30 +258,53 @@ class EpubManager:
         self.book.set_cover("cover.jpg", image_data)
 
     def save(self, output_path=None):
-        """Writes the modified EPUB to disk."""
+        """Writes the modified EPUB to disk with safe metadata cleanup."""
         if not self.book:
             return
         if not output_path:
             output_path = self.filepath
 
-        # Clean up problematic custom metadata before saving to prevent ebooklib errors
-        # (e.g., ERROR:root:Could not create metadata "user_metadata:#...")
-        # DEBUG: Temporarily commented out to investigate "Document is empty" crash
-        # for ns in list(self.book.metadata.keys()):
-        #     # Ensure ns is a string before checking content (keys can be None in some edge cases)
-        #     if ns and ("user_metadata" in ns or "calibre" in ns.lower()):
-        #         Logger.verbose(f"Removing problematic metadata namespace: {ns}", indent=4)
-        #         del self.book.metadata[ns]
+        # Cleanup problematic custom metadata
+        for ns in list(self.book.metadata.keys()):
+            if not ns:
+                continue
 
-        # DEBUG: Check state before write
-        d_titles = self.book.get_metadata("DC", "title")
-        d_ids = self.book.get_metadata("DC", "identifier")
-        Logger.verbose(f"[DEBUG PRE-SAVE] Title: {d_titles}, IDs: {len(d_ids)}", indent=4)
+            # 1. Cleanup by namespace string
+            if "user_metadata" in ns or "calibre" in ns.lower():
+                del self.book.metadata[ns]
+                continue
+
+            # 2. Cleanup individual keys and safely filter values
+            keys_to_del = []
+            for key, items in self.book.metadata[ns].items():
+                if key and ("user_metadata" in key or "calibre" in key.lower()):
+                    keys_to_del.append(key)
+                    continue
+
+                new_items = []
+                for val, attrs in items:
+                    # Keep if value is present OR if attributes are present (important for cover meta)
+                    if val is not None or (attrs and len(attrs) > 0):
+                        # Ensure attributes don't contain None values
+                        clean_attrs = {}
+                        if isinstance(attrs, dict):
+                            for ak, av in attrs.items():
+                                if ak is not None and av is not None:
+                                    clean_attrs[ak] = av
+                        new_items.append((val, clean_attrs))
+
+                if not new_items:
+                    keys_to_del.append(key)
+                else:
+                    self.book.metadata[ns][key] = new_items
+
+            for k in keys_to_del:
+                del self.book.metadata[ns][k]
 
         try:
             epub.write_epub(output_path, self.book, {})
         except Exception as e:
-            Logger.error(f"Failed to write EPUB (likely corrupted structure): {e}")
+            Logger.error(f"Failed to write EPUB: {e}")
             raise e
 
 

@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+import traceback
 from src import config
 from src.utils.logger import Logger
 from src.pipeline.orchestrator import PipelineOrchestrator
@@ -8,9 +9,7 @@ from src.pipeline.orchestrator import PipelineOrchestrator
 
 def main():
     parser = argparse.ArgumentParser(description="Full Ebook Pipeline.")
-    parser.add_argument(
-        "path", nargs="?", help="Directory or file to process."
-    )
+    parser.add_argument("path", nargs="?", help="Directory or file to process.")
 
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose mode.")
     parser.add_argument(
@@ -31,9 +30,10 @@ def main():
         help="Auto-save metadata (skip confirmation for high confidence).",
     )
     parser.add_argument(
-        "-i", "--interactive",
+        "-i",
+        "--interactive",
         action="store_true",
-        help="Interactive mode: confirm each metadata field change manually."
+        help="Interactive mode: confirm each metadata field change manually.",
     )
     parser.add_argument(
         "--force-isbn",
@@ -53,7 +53,7 @@ def main():
         auto_save=args.auto,
         enable_kepub=not args.no_kepub,
         enable_rename=not args.no_rename,
-        interactive_fields=args.interactive
+        interactive_fields=args.interactive,
     )
 
     target_path = args.path
@@ -84,8 +84,10 @@ def main():
         print("\nProcess stopped by user.")
     except Exception as e:
         Logger.error(f"Unexpected error: {e}")
+        print(traceback.format_exc())
         sys.exit(1)
 
 
 if __name__ == "__main__":
     main()
+
