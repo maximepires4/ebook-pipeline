@@ -1,169 +1,146 @@
 # 📚 Ebook Super Pipeline
 
-A complete automation tool to manage your ebook library (EPUB). It extracts metadata, enriches information via online APIs, converts files for Kobo (KEPUB), and can publish them directly to Google Drive.
+**The ultimate automated tool for curating your Ebook library.**
+
+This pipeline extracts metadata from your EPUB files, attempts to find better metadata online (Google Books, OpenLibrary), standardizes filenames, converts to KEPUB (for Kobo e-readers), and uploads the results to Google Drive or a local folder.
 
 ## 🚀 Key Features
 
-*   **Metadata Enrichment**: Smart search on **Google Books** and **OpenLibrary** (automatic fallback if ISBN fails).
-*   **Interactive Review**: Asks for your confirmation if the match confidence is low (< 90%), so you never overwrite data blindly.
-*   **Granular Control**: Use `-i` mode to manually approve each field (Title, Author, Cover...) change individually.
-*   **Cover Management**: Automatically downloads and resizes the best available high-quality covers.
-*   **Kobo Optimization**: Automatic conversion to **KEPUB** format via [kepubify](https://github.com/pgaskin/kepubify).
-*   **Standardization**: Clean renaming of files (`Title - Author - Year`).
-*   **Drive & KoboCloud**: Native upload via Google Drive API or local copy for third-party synchronization.
+*   **Smart Metadata Enrichment**:
+    *   **Waterfall Search Strategy**: Prioritizes ISBN lookups (high precision) but falls back to a "relaxed" text search (Title/Author/Publisher) if no ISBN is found.
+    *   **Confidence Scoring**: Calculates a reliability score (0-100%) for each match based on title similarity, author overlap, and result uniqueness.
+*   **Safety First**:
+    *   **Interactive Review**: By default, low-confidence matches require your confirmation.
+    *   **Granular Control (`-i`)**: Optionally review every single field change (Title, Author, Description, etc.) before applying.
+    *   **Non-Destructive**: Processes files in a temporary workspace; original files are never modified in place unless output to the same directory.
+*   **Media Management**:
+    *   **High-Res Covers**: Automatically downloads and optimizes covers for e-ink screens (resizing to max 1600x2400, grayscale optimized JPEG).
+*   **Kobo Optimization**:
+    *   Native integration with **[kepubify](https://github.com/pgaskin/kepubify)** to convert EPUBs to KEPUB for faster page turns and better formatting on Kobo devices.
+*   **Cloud Sync**:
+    *   Direct upload to **Google Drive** (ideal for use with **[KoboCloud](https://github.com/fsantini/KoboCloud)**).
+    *   Resumable uploads for large files.
 
 ## 🛠️ Installation
 
-### 1. System Prerequisites
-This project requires the `kepubify` tool for Kobo conversion.
+### 1. Prerequisites
+*   **Python 3.12+**
+*   **Kepubify**: Required for Kobo conversion.
+    1.  Download the binary from [pgaskin/kepubify](https://github.com/pgaskin/kepubify/releases).
+    2.  Place it in your system `PATH` or in the root of this project.
+    3.  Rename it to `kepubify` (Windows: `kepubify.exe`) and `chmod +x kepubify`.
 
-1.  Download the latest version from [pgaskin/kepubify](https://github.com/pgaskin/kepubify/releases).
-2.  Place the binary in your system `PATH` (recommended) or at the root of this project.
-3.  Rename it simply to `kepubify` (or `kepubify.exe` on Windows) and make it executable (`chmod +x kepubify`).
-
-### 2. Python Installation
+### 2. Setup
 ```bash
 git clone https://github.com/your-repo/ebook-metadata.git
 cd ebook-metadata
 pip install -r requirements.txt
-```
-
-### 3. Configuration (.env)
-Copy the template:
-```bash
 cp .env.example .env
 ```
 
-## 🐳 Usage with Docker (Recommended)
+### 3. Google Drive (Optional)
+To enable Cloud Upload:
+1.  Create a project in [Google Cloud Console](https://console.cloud.google.com/).
+2.  Enable the **Google Drive API**.
+3.  Create **OAuth 2.0 Client IDs** (Desktop App).
+4.  Download the JSON, rename it to `credentials.json`, and place it in the project root.
+5.  Set `GOOGLE_CREDENTIALS_PATH=credentials.json` in `.env`.
 
-The Docker image contains all dependencies (including `kepubify`) and runs securely as a non-root user.
+## ⚙️ Configuration (`.env`)
 
-1.  **Prepare files**
-    *   Place your `.epub` files in the `data/` directory.
-    *   Configure your `.env` and `credentials.json` (if using Drive) at the root.
+Configure the pipeline behavior via the `.env` file:
 
-2.  **Run the pipeline**
-    ```bash
-    docker-compose up --build
-    ```
-
-**Note:** The container is configured with `tty: true` to allow interactive confirmation (`y/n`) for low-confidence matches directly in your terminal.
-
-## ☁️ KoboCloud Integration
-
-This project is the ideal companion for [KoboCloud](https://github.com/fsantini/KoboCloud).
-
-1.  **The "Feeder" (This project)**:
-    *   Processes books in `data/`.
-    *   Cleans metadata, fetches HD covers, converts to **KEPUB**.
-    *   Uploads the result to a specific Google Drive folder.
-
-2.  **The "Reader" (Your Kobo)**:
-    *   Install KoboCloud on your device.
-    *   Add the public share link of your Drive folder to `kobocloudrc`.
-
-**Result**: Your books appear wirelessly on your Kobo, perfectly formatted.
-
-## ☁️ Google Drive Configuration
-
-### Mode A: Google Drive API (Recommended)
-Direct upload via the official API. Requires OAuth2.
-
-1.  Enable **Google Drive API** in [Google Cloud Console](https://console.cloud.google.com/).
-2.  Create **OAuth 2.0 Client IDs** (Desktop App).
-3.  Save the JSON as `credentials.json` in the project root.
-4.  Set `ENABLE_DRIVE_UPLOAD=True` in `.env`.
-
-*On the first run (even in Docker), you will be asked to authenticate via a URL.*
-
-### Mode B: Local Copy (Default)
-Files are copied to the `output/` directory. Use this if you sync via Dropbox, Syncthing, or a mounted Drive client.
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| **UPLOAD** | | |
+| `GOOGLE_CREDENTIALS_PATH` | `credentials.json` | Path to OAuth client ID JSON. |
+| `DRIVE_FOLDER_ID` | *None* | ID of the destination folder on Drive (from URL). If empty, uploads to root. |
+| **PIPELINE** | | |
+| `ENABLE_KEPUBIFY` | `True` | Convert EPUB to KEPUB. |
+| `ENABLE_RENAME` | `True` | Rename files to `Title - Author - Year.epub`. |
+| `UPDATE_COVER` | `True` | Download and replace cover images. |
+| `AUTO_SAVE` | `False` | Skip confirmation prompts (risky for batch processing). |
+| **SEARCH** | | |
+| `API_SOURCE` | `all` | `google`, `openlibrary`, or `all`. |
+| `FILTER_BY_LANGUAGE` | `True` | Filter API results to match the EPUB's language tag. |
+| `USE_PUBLISHER_IN_SEARCH` | `True` | Include publisher name in text search queries. |
+| `USE_YEAR_IN_SEARCH` | `True` | Include publication year in text search queries. |
+| `CONFIDENCE_THRESHOLD_HIGH` | `80` | Score above which auto-save applies (if enabled). |
+| **DEBUG** | | |
+| `VERBOSE` | `False` | Show detailed search steps and HTTP logs. |
+| `FULL_OUTPUT` | `False` | Dump full JSON responses from APIs. |
 
 ## 🎮 Usage
 
-### Automatic Pipeline Mode
-Processes an entire folder or a single file.
+### Basic Usage
+Process a single file or an entire directory.
 ```bash
-python main.py data
-# OR
-python main.py data/my_book.epub
+# Process all .epub files in the data/ folder
+python main.py data/
+
+# Process a specific file
+python main.py data/dune.epub
 ```
 
-### Interactive Mode
-By default, the script asks for global confirmation if the confidence score is below 90%.
+### CLI Options
 
-*   **Granular Review (`-i`)**:
-    Review changes field by field (Title, Author, Date, Cover...).
-    *Note: If all changes are rejected, the pipeline continues with the original metadata.*
-    ```bash
-    python main.py data -i
-    ```
-
-*   **Force Auto (`--auto`)**:
-    Skip all confirmations (Batch mode).
-    ```bash
-    python main.py data --auto
-    ```
-
-### Command Line Options
-
-| Argument | Description |
+| Flag | Description |
 | :--- | :--- |
-| `path` | Directory or file to process (default: `data`). |
-| `-i, --interactive` | Granular review mode (confirm each field). |
-| `--drive PATH` | Sets the local sync folder (Mode B). |
-| `--no-kepub` | Disables KEPUB conversion. |
-| `--no-rename` | Disables renaming. |
-| `--auto` | **Force auto-save** (skips all confirmation prompts). |
-| `--force-isbn ISBN` | Force a specific ISBN for the search (single file only). |
-| `-s, --source` | Force a specific API (`google`, `openlibrary`). |
-| `-v` | Verbose mode (debug). |
+| `-i`, `--interactive` | **Granular Review Mode**: Ask for confirmation for *each field* (Title, Date, Cover...) that differs. |
+| `--auto` | **Batch Mode**: Automatically accept changes if confidence > 80%, skip others. |
+| `--no-kepub` | Disable KEPUB conversion for this run. |
+| `--no-rename` | Keep original filenames. |
+| `--no-upload` | Process locally only (files remain in `output/` or temp). |
+| `--isbn <ISBN>` | Force a specific ISBN for the search (works only with single file). |
+| `-v`, `--verbose` | Enable debug logs. |
+| `-s <source>` | Limit search to `google` or `openlibrary`. |
+
+### Examples
+
+**1. Interactive Review (Recommended for new books)**
+```bash
+python main.py data/new_books/ -i
+```
+
+**2. Force specific ISBN**
+Useful if the automatic search finds the wrong edition.
+```bash
+python main.py data/unknown_book.epub --isbn 9780441172719
+```
+
+**3. Offline / Local Only**
+Just clean metadata, rename, and convert, without uploading.
+```bash
+python main.py data/ --no-upload --no-kepub
+```
 
 ## 🛠️ Debugging Tools
 
-The `tools/` directory contains useful standalone scripts to diagnose issues without modifying your files.
-**Note:** Run them as modules (`python -m tools.xxx`) to avoid import errors.
+The `tools/` directory contains standalone scripts to diagnose issues without running the full pipeline.
 
-### 1. Inspector
-Displays all metadata found in an EPUB.
-```bash
-python -m tools.inspect "data/book.epub"
-# Or check all files in a folder:
-python -m tools.inspect data/
-```
-
-### 2. Search Tester
-Runs the search logic and shows what *would* be found online, including confidence scores.
-```bash
-python -m tools.search "data/book.epub"
-```
-
-### 3. Dry Run
-Simulates the full pipeline (Extraction -> Search -> Conversion -> Renaming -> Upload) but stops before writing any changes to disk or cloud.
-```bash
-python -m tools.dry_run data/
-```
-
-### 4. Uploader
-Manually uploads a file or folder to the configured Google Drive (useful for bulk uploads without processing).
-```bash
-python -m tools.upload path/to/files
-```
+*   **Inspector**: See exactly what metadata exists inside a file.
+    ```bash
+    python -m tools.inspect data/book.epub --full
+    ```
+*   **Search Tester**: Test the search logic and see confidence scores without changing files.
+    ```bash
+    python -m tools.search data/book.epub
+    ```
+*   **Dry Run**: Simulate the whole process (including renaming/conversion logic) without writing to disk.
+    ```bash
+    python -m tools.dry_run data/
+    ```
 
 ## 📦 Architecture
 
-*   `src/pipeline/`: Orchestration (Orchestrator, EpubManager, DriveUploader).
-*   `src/search/`: Logic for finding books (Waterfall strategy).
-*   `src/models.py`: Type definitions (`BookMetadata`, `SearchResult`).
-*   `src/config.py`: Configuration registry.
-
-## 🔒 Security
-
-*   **Binary Verification**: Downloads `kepubify` from a specific version/URL in Docker.
-*   **Least Privilege**: Docker container runs as `appuser` (UID 1000).
-*   **Secrets**: OAuth tokens are stored locally (`token.json`) and ignored by git.
+*   **`src/pipeline/`**:
+    *   `Orchestrator`: Manages the flow (Extract -> Search -> Update -> Convert -> Upload).
+    *   `EpubManager`: Handles `EbookLib` interactions (reading/writing OPF/DC metadata).
+    *   `DriveUploader`: Handles Google Drive OAuth2 and resumable uploads.
+*   **`src/search/`**:
+    *   `BookFinder`: Implements the "Waterfall" strategy.
+    *   `ConfidenceScorer`: The logic engine for rating match quality.
 
 ## 🔗 Credits
-
-*   **Kepubify**: [pgaskin/kepubify](https://github.com/pgaskin/kepubify)
-*   **APIs**: Google Books API & OpenLibrary.
+*   [kepubify](https://github.com/pgaskin/kepubify) by pgaskin.
+*   Google Books API & OpenLibrary API.
