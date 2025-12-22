@@ -59,7 +59,6 @@ SHOW_IDENTIFIERS = True
 # --- Search Logic Tuning ---
 # These flags control the "strictness" of the text search.
 USE_PUBLISHER_IN_SEARCH = get_bool_env("USE_PUBLISHER_IN_SEARCH", True)
-USE_SERIES_IN_SEARCH = get_bool_env("USE_SERIES_IN_SEARCH", True)
 USE_YEAR_IN_SEARCH = get_bool_env("USE_YEAR_IN_SEARCH", True)
 # If True, filters API results to match the EPUB's language (reduces noise)
 FILTER_BY_LANGUAGE = get_bool_env("FILTER_BY_LANGUAGE", True)

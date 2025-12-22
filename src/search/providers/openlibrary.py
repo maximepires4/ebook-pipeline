@@ -29,7 +29,7 @@ class OpenLibraryProvider(MetadataProvider):
             if key in data:
                 return self._normalize_isbn(data[key]), 1
         except Exception as e:
-            Logger.verbose(f"[OL] ISBN Error: {e}", indent=4)
+            Logger.verbose(f"[OL] ISBN Error: {e}")
         return None, 0
 
     def search_by_text(
@@ -44,8 +44,8 @@ class OpenLibraryProvider(MetadataProvider):
         t = title.split("(")[0].split(":")[0].strip()
         params = {"title": t}
 
-        if meta.get("author") and meta["author"] != "Unknown":
-            params["author"] = meta["author"]
+        if meta.get("author") and meta.get("author") != "Unknown":
+            params["author"] = meta.get("author") or ""  # TODO: Debug author
 
         publisher = meta.get("publisher") or ""
         if context.get("pub", False) and config.USE_PUBLISHER_IN_SEARCH and publisher:

@@ -13,7 +13,7 @@ from src.search.providers.openlibrary import OpenLibraryProvider
 
 def get_providers() -> List[MetadataProvider]:
     """Initializes the metadata providers based on configuration."""
-    providers = []
+    providers: List[MetadataProvider] = []
     if config.API_SOURCE in ["all", "google"]:
         providers.append(GoogleBooksProvider())
     if config.API_SOURCE in ["all", "openlibrary"]:

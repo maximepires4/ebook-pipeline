@@ -47,20 +47,6 @@ class Formatter:
             )
             print(f"  Date:      {curated['date'] if curated['date'] else 'Unknown'}")
 
-            if curated["series"]:
-                index_str = (
-                    f" (Tome {curated['series_index']})"
-                    if curated["series_index"]
-                    else ""
-                )
-                print(f"  Series:    {curated['series']}{index_str}")
-
-            if curated.get("tags"):
-                tags = ", ".join(curated["tags"][:5])
-                if len(curated["tags"]) > 5:
-                    tags += "..."
-                print(f"  Tags:      {tags}")
-
         print("-" * 60)
 
     @staticmethod

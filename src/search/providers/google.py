@@ -90,11 +90,6 @@ class GoogleBooksProvider(MetadataProvider):
 
         use_year = context.get("year", False) and config.USE_YEAR_IN_SEARCH and year
 
-        series = meta.get("series") or ""
-        use_series = (
-            context.get("series", False) and config.USE_SERIES_IN_SEARCH and series
-        )
-
         title = meta.get("title", "")
         if not title:
             return ""
@@ -103,17 +98,14 @@ class GoogleBooksProvider(MetadataProvider):
         clean_title = title.split("(")[0].split(":")[0].strip()
         parts = [f"intitle:{clean_title}"]
 
-        if meta.get("author") and meta["author"] != "Unknown":
-            parts.append(f"inauthor:{meta['author']}")
+        if meta.get("author") and meta.get("author") != "Unknown":
+            parts.append(f"inauthor:{meta.get('author')}")
 
         if use_pub:
             clean_pub = publisher.replace("Editions", "").strip()
             parts.append(f"inpublisher:{clean_pub}")
 
-        # Add keywords (Year/Series) as loose terms (not strict fields)
         keywords = []
-        if use_series:
-            keywords.append(series.split("(")[0].strip())
         if use_year:
             keywords.append(year)
 
