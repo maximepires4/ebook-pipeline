@@ -94,6 +94,7 @@ By default, the script asks for global confirmation if the confidence score is b
 
 *   **Granular Review (`-i`)**:
     Review changes field by field (Title, Author, Date, Cover...).
+    *Note: If all changes are rejected, the pipeline continues with the original metadata.*
     ```bash
     python main.py data -i
     ```
@@ -114,6 +115,7 @@ By default, the script asks for global confirmation if the confidence score is b
 | `--no-kepub` | Disables KEPUB conversion. |
 | `--no-rename` | Disables renaming. |
 | `--auto` | **Force auto-save** (skips all confirmation prompts). |
+| `--force-isbn ISBN` | Force a specific ISBN for the search (single file only). |
 | `-s, --source` | Force a specific API (`google`, `openlibrary`). |
 | `-v` | Verbose mode (debug). |
 

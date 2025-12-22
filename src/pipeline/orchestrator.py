@@ -58,7 +58,7 @@ class PipelineOrchestrator:
                 Logger.error(f"Critical error processing {f}: {e}")
             print("-" * 60)
 
-    def process_file(self, file_path):
+    def process_file(self, file_path, forced_isbn=None):
         """
         Runs the full pipeline securely using a temporary workspace.
         Ensures the source file is never modified.
@@ -84,9 +84,11 @@ class PipelineOrchestrator:
                 Logger.warning(f"Skipping (No Meta): {filename}")
                 return
 
-            Logger.info(
-                f"Processing: {meta.get('title', 'Unknown')} ({filename})"
-            )
+            if forced_isbn:
+                Logger.info(f"Using Forced ISBN: {forced_isbn}", indent=4)
+                meta["isbn"] = forced_isbn
+
+            Logger.info(f"Processing: {meta.get('title', 'Unknown')} ({filename})")
 
             online_data, confidence, strategy, _ = find_book(meta)
 
@@ -110,6 +112,11 @@ class PipelineOrchestrator:
                 if approved_data:
                     self._update_metadata(manager, approved_data)
                     final_meta = self._get_updated_meta_dict(meta, approved_data)
+                elif self.interactive_fields:
+                    Logger.info(
+                        "No metadata changes selected. Continuing with local metadata.",
+                        indent=4,
+                    )
                 else:
                     Logger.warning("Skipping file (Metadata update rejected by user).")
                     return
@@ -232,7 +239,7 @@ class PipelineOrchestrator:
 
     def _get_updated_meta_dict(self, original_meta, online_data):
         new_meta = original_meta.copy()
-        
+
         # Only update keys that are present in online_data (approved changes)
         if "title" in online_data:
             new_meta["title"] = online_data["title"]
@@ -245,7 +252,7 @@ class PipelineOrchestrator:
 
         if "publishedDate" in online_data:
             new_meta["date"] = online_data["publishedDate"]
-            
+
         return new_meta
 
     def _handle_conversion(self, input_path):
@@ -286,3 +293,4 @@ class PipelineOrchestrator:
                 Logger.error(f"Rename failed: {e}", indent=4)
 
         return current_path
+

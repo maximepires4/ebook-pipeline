@@ -133,8 +133,6 @@ class Formatter:
         if config.VERBOSE and hits > 1:
             Logger.info(f"Hits: {hits}", indent=7)
 
-        print("-" * 60)
-
     @staticmethod
     def print_comparison(local_meta, remote_data):
         """

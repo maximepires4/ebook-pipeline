@@ -184,66 +184,71 @@ class EpubManager:
     def update_metadata(self, new_data: dict):
         """
         Overwrites existing metadata with new data from search results.
-        Clears old Dublin Core entries first to avoid duplicates.
+        Clears old Dublin Core entries ONLY if new data is available to replace them.
         """
         if not self.book:
             return
 
-        # Explicitly clear old DC fields
-        self._clear_metadata("http://purl.org/dc/elements/1.1/", "title")
-        self._clear_metadata("http://purl.org/dc/elements/1.1/", "creator")
-        self._clear_metadata("http://purl.org/dc/elements/1.1/", "publisher")
-        self._clear_metadata("http://purl.org/dc/elements/1.1/", "date")
-        self._clear_metadata("http://purl.org/dc/elements/1.1/", "description")
-        self._clear_metadata("http://purl.org/dc/elements/1.1/", "subject")
-        self._clear_metadata("http://purl.org/dc/elements/1.1/", "language")
-        self._clear_metadata(
-            "http://purl.org/dc/elements/1.1/", "identifier"
-        )  # Careful with ID
-
-        # 1. Title
+        # 1. Title (Mandatory)
         if new_data.get("title"):
+            self._clear_metadata("http://purl.org/dc/elements/1.1/", "title")
             self.book.set_title(new_data["title"])
 
-        # 2. Authors (with Sort Name)
+        # 2. Authors (Mandatory)
         authors = new_data.get("authors", [])
         if isinstance(authors, str):
             authors = [authors]
-
-        for auth in authors:
-            sort_name = format_author_sort(auth)
-            # Add author with file-as attribute for proper sorting
-            self.book.add_author(auth, file_as=sort_name, role="aut")
+        if authors:
+            self._clear_metadata("http://purl.org/dc/elements/1.1/", "creator")
+            for auth in authors:
+                sort_name = format_author_sort(auth)
+                self.book.add_author(auth, file_as=sort_name, role="aut")
 
         # 3. Publisher
         if new_data.get("publisher"):
+            self._clear_metadata("http://purl.org/dc/elements/1.1/", "publisher")
             self.book.add_metadata("DC", "publisher", new_data["publisher"])
 
         # 4. Date
         if new_data.get("publishedDate"):
+            self._clear_metadata("http://purl.org/dc/elements/1.1/", "date")
             self.book.add_metadata("DC", "date", new_data["publishedDate"])
 
         # 5. Language
         if new_data.get("language"):
+            self._clear_metadata("http://purl.org/dc/elements/1.1/", "language")
             self.book.set_language(new_data["language"])
 
         # 6. Description
         if new_data.get("description"):
+            self._clear_metadata("http://purl.org/dc/elements/1.1/", "description")
             self.book.add_metadata("DC", "description", new_data["description"])
 
         # 7. Tags / Subjects
         if new_data.get("categories"):
+            self._clear_metadata("http://purl.org/dc/elements/1.1/", "subject")
             for tag in new_data["categories"]:
                 self.book.add_metadata("DC", "subject", tag)
 
         # 8. ISBN / Identifier
         # We try to extract ISBN-13 from industryIdentifiers
         if new_data.get("industryIdentifiers"):
+            # Check if we have a valid ISBN before clearing old identifiers
+            has_isbn = False
             for ident in new_data["industryIdentifiers"]:
-                # Google Books format: {'type': 'ISBN_13', 'identifier': '...'}
                 if ident.get("type") == "ISBN_13":
-                    self.book.set_identifier(ident["identifier"])
+                    has_isbn = True
                     break
+            
+            if has_isbn:
+                # Careful: This removes ALL identifiers, including non-ISBNs. 
+                # Ideally we should only remove ISBNs, but ebooklib API is limited.
+                self._clear_metadata("http://purl.org/dc/elements/1.1/", "identifier")
+                
+                for ident in new_data["industryIdentifiers"]:
+                    if ident.get("type") == "ISBN_13":
+                        self.book.set_identifier(ident["identifier"])
+                        break
 
     def set_cover(self, image_data):
         """Sets the cover image. EbookLib handles the manifest item creation."""
@@ -257,7 +262,21 @@ class EpubManager:
             return
         if not output_path:
             output_path = self.filepath
-        
+
+        # Clean up problematic custom metadata before saving to prevent ebooklib errors
+        # (e.g., ERROR:root:Could not create metadata "user_metadata:#...")
+        # DEBUG: Temporarily commented out to investigate "Document is empty" crash
+        # for ns in list(self.book.metadata.keys()):
+        #     # Ensure ns is a string before checking content (keys can be None in some edge cases)
+        #     if ns and ("user_metadata" in ns or "calibre" in ns.lower()):
+        #         Logger.verbose(f"Removing problematic metadata namespace: {ns}", indent=4)
+        #         del self.book.metadata[ns]
+
+        # DEBUG: Check state before write
+        d_titles = self.book.get_metadata("DC", "title")
+        d_ids = self.book.get_metadata("DC", "identifier")
+        Logger.verbose(f"[DEBUG PRE-SAVE] Title: {d_titles}, IDs: {len(d_ids)}", indent=4)
+
         try:
             epub.write_epub(output_path, self.book, {})
         except Exception as e:

@@ -35,6 +35,10 @@ def main():
         action="store_true",
         help="Interactive mode: confirm each metadata field change manually."
     )
+    parser.add_argument(
+        "--force-isbn",
+        help="Force a specific ISBN for the search (single file only).",
+    )
 
     args = parser.parse_args()
 
@@ -68,8 +72,11 @@ def main():
     try:
         if os.path.isfile(target_path):
             Logger.info(f"🚀 Starting Pipeline on single file: {target_path}")
-            orchestrator.process_file(target_path)
+            orchestrator.process_file(target_path, forced_isbn=args.force_isbn)
         elif os.path.isdir(target_path):
+            if args.force_isbn:
+                Logger.error("--force-isbn is only supported for single files.")
+                sys.exit(1)
             orchestrator.process_directory(target_path)
         else:
             Logger.error(f"Path not found: {target_path}")
