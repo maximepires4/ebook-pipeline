@@ -24,8 +24,6 @@ class BookMetadata(TypedDict, total=False):
     date: Optional[str]  # Format: YYYY-MM-DD or YYYY
     language: Optional[str]
     description: Optional[str]
-    series: Optional[str]
-    series_index: Optional[float]
     tags: List[str]
     filename: str  # Source filename for reference
 
@@ -43,7 +41,6 @@ class SearchResult(TypedDict, total=False):
     industryIdentifiers: List[
         Dict[str, str]
     ]  # e.g. [{'type': 'ISBN_13', 'identifier': '...'}]
-    pageCount: int
     categories: List[str]
     imageLinks: ImageLinks
     publisher: str
