@@ -1,12 +1,65 @@
+# --- Python ---
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# --- Environments ---
 .env
 .venv
 env/
 venv/
-data/*
-output/*
-work/*
+ENV/
+env.bak/
+venv.bak/
+
+# --- Distribution / Build ---
+build/
+dist/
+wheels/
+*.egg-info/
+.eggs/
+
+# --- Installer logs ---
+pip-log.txt
+pip-delete-this-directory.txt
+
+# --- Unit Test / Coverage ---
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# --- Type Checking ---
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# --- Tools / IDEs ---
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# --- Project Specific ---
+# User credentials (NEVER COMMIT THESE)
 credentials.json
 token.json
-.DS_Store
+
+# Local data directories
+data/*
+!data/.gitkeep
+output/*
+!output/.gitkeep
+work/*
+tmp/*
+
+# Logs
+*.log

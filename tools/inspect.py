@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-import sys
-import os
 import argparse
+import os
+import sys
 
 # Ensure project root is in path
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.pipeline.epub_manager import EpubManager
-from src.utils.formatter import Formatter
-from src.utils.logger import Logger
+from epub_pipeline.pipeline.epub_manager import EpubManager
+from epub_pipeline.utils.formatter import Formatter
+from epub_pipeline.utils.logger import Logger
 
 
 def process_file(path, args):
@@ -24,15 +24,9 @@ def process_file(path, args):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Inspect EPUB metadata without modifying anything."
-    )
-    parser.add_argument(
-        "path", nargs="?", default="data", help="Path to EPUB file or directory."
-    )
-    parser.add_argument(
-        "--full", action="store_true", help="Show raw XML metadata tags."
-    )
+    parser = argparse.ArgumentParser(description="Inspect EPUB metadata without modifying anything.")
+    parser.add_argument("path", nargs="?", default="data", help="Path to EPUB file or directory.")
+    parser.add_argument("--full", action="store_true", help="Show raw XML metadata tags.")
     args = parser.parse_args()
 
     if not os.path.exists(args.path):

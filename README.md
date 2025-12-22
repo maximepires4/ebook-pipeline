@@ -1,4 +1,10 @@
-# 📚 Ebook Super Pipeline
+# 📚 Epub Pipeline
+
+[![PyPI Version](https://img.shields.io/pypi/v/epub-pipeline?color=blue&style=flat-square)](https://pypi.org/project/epub-pipeline/)
+[![Python Version](https://img.shields.io/pypi/pyversions/epub-pipeline?style=flat-square)](https://pypi.org/project/epub-pipeline/)
+[![License](https://img.shields.io/github/license/your-username/epub-pipeline?style=flat-square)](LICENSE)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/your-username/epub-pipeline/ci.yml?branch=main&style=flat-square)](https://github.com/your-username/epub-pipeline/actions)
+[![Code Style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 **The ultimate automated tool for curating your Ebook library.**
 
@@ -27,59 +33,44 @@ This pipeline extracts metadata from your EPUB files, attempts to find better me
 *   **Python 3.12+**
 *   **Kepubify**: Required for Kobo conversion.
     1.  Download the binary from [pgaskin/kepubify](https://github.com/pgaskin/kepubify/releases).
-    2.  Place it in your system `PATH` or in the root of this project.
-    3.  Rename it to `kepubify` (Windows: `kepubify.exe`) and `chmod +x kepubify`.
+    2.  Place it in your system `PATH` (recommended).
+    3.  Rename it to `kepubify` (Windows: `kepubify.exe`) and ensure it is executable.
 
-### 2. Setup
+### 2. Install Package
+Clone the repository and install it in editable mode:
+
 ```bash
-git clone https://github.com/your-repo/ebook-metadata.git
-cd ebook-metadata
-pip install -r requirements.txt
+git clone https://github.com/your-repo/epub-pipeline.git
+cd epub-pipeline
+pip install -e .
+```
+This will install the `epubpipe` command globally in your Python environment.
+
+### 3. Configuration (.env)
+Copy the template and edit your settings:
+```bash
 cp .env.example .env
 ```
+*Note: The tool looks for `.env` in the directory where you run the command.*
 
-### 3. Google Drive (Optional)
+### 4. Google Drive (Optional)
 To enable Cloud Upload:
 1.  Create a project in [Google Cloud Console](https://console.cloud.google.com/).
 2.  Enable the **Google Drive API**.
 3.  Create **OAuth 2.0 Client IDs** (Desktop App).
-4.  Download the JSON, rename it to `credentials.json`, and place it in the project root.
+4.  Download the JSON, rename it to `credentials.json`, and place it in your working directory.
 5.  Set `GOOGLE_CREDENTIALS_PATH=credentials.json` in `.env`.
-
-## ⚙️ Configuration (`.env`)
-
-Configure the pipeline behavior via the `.env` file:
-
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| **UPLOAD** | | |
-| `GOOGLE_CREDENTIALS_PATH` | `credentials.json` | Path to OAuth client ID JSON. |
-| `DRIVE_FOLDER_ID` | *None* | ID of the destination folder on Drive (from URL). If empty, uploads to root. |
-| **PIPELINE** | | |
-| `ENABLE_KEPUBIFY` | `True` | Convert EPUB to KEPUB. |
-| `ENABLE_RENAME` | `True` | Rename files to `Title - Author - Year.epub`. |
-| `UPDATE_COVER` | `True` | Download and replace cover images. |
-| `AUTO_SAVE` | `False` | Skip confirmation prompts (risky for batch processing). |
-| **SEARCH** | | |
-| `API_SOURCE` | `all` | `google`, `openlibrary`, or `all`. |
-| `FILTER_BY_LANGUAGE` | `True` | Filter API results to match the EPUB's language tag. |
-| `USE_PUBLISHER_IN_SEARCH` | `True` | Include publisher name in text search queries. |
-| `USE_YEAR_IN_SEARCH` | `True` | Include publication year in text search queries. |
-| `CONFIDENCE_THRESHOLD_HIGH` | `80` | Score above which auto-save applies (if enabled). |
-| **DEBUG** | | |
-| `VERBOSE` | `False` | Show detailed search steps and HTTP logs. |
-| `FULL_OUTPUT` | `False` | Dump full JSON responses from APIs. |
 
 ## 🎮 Usage
 
 ### Basic Usage
-Process a single file or an entire directory.
+Process a single file or an entire directory using the CLI command:
 ```bash
 # Process all .epub files in the data/ folder
-python main.py data/
+epubpipe data/
 
 # Process a specific file
-python main.py data/dune.epub
+epubpipe data/dune.epub
 ```
 
 ### CLI Options
@@ -99,24 +90,24 @@ python main.py data/dune.epub
 
 **1. Interactive Review (Recommended for new books)**
 ```bash
-python main.py data/new_books/ -i
+epubpipe data/new_books/ -i
 ```
 
 **2. Force specific ISBN**
 Useful if the automatic search finds the wrong edition.
 ```bash
-python main.py data/unknown_book.epub --isbn 9780441172719
+epubpipe data/unknown_book.epub --isbn 9780441172719
 ```
 
 **3. Offline / Local Only**
 Just clean metadata, rename, and convert, without uploading.
 ```bash
-python main.py data/ --no-upload --no-kepub
+epubpipe data/ --no-upload --no-kepub
 ```
 
 ## 🛠️ Debugging Tools
 
-The `tools/` directory contains standalone scripts to diagnose issues without running the full pipeline.
+The `tools/` directory contains standalone scripts to diagnose issues. You can run them as modules from the project root:
 
 *   **Inspector**: See exactly what metadata exists inside a file.
     ```bash
@@ -130,16 +121,32 @@ The `tools/` directory contains standalone scripts to diagnose issues without ru
     ```bash
     python -m tools.dry_run data/
     ```
+*   **Manual Upload**: Upload a file or folder to Google Drive immediately.
+    ```bash
+    python -m tools.upload data/book.epub
+    ```
 
-## 📦 Architecture
+## 💻 Development
 
-*   **`src/pipeline/`**:
-    *   `Orchestrator`: Manages the flow (Extract -> Search -> Update -> Convert -> Upload).
-    *   `EpubManager`: Handles `EbookLib` interactions (reading/writing OPF/DC metadata).
-    *   `DriveUploader`: Handles Google Drive OAuth2 and resumable uploads.
-*   **`src/search/`**:
-    *   `BookFinder`: Implements the "Waterfall" strategy.
-    *   `ConfidenceScorer`: The logic engine for rating match quality.
+### Setup
+```bash
+# Install in editable mode with dev dependencies
+pip install -e .[dev]
+
+# Install pre-commit hooks
+pre-commit install
+```
+
+### Running Tests
+```bash
+pytest
+```
+
+### Manual Linting
+```bash
+ruff check .
+mypy .
+```
 
 ## 🔗 Credits
 *   [kepubify](https://github.com/pgaskin/kepubify) by pgaskin.

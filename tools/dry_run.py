@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-import sys
-import os
 import argparse
+import os
+import sys
 
 # Ensure project root is in path
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.pipeline.epub_manager import EpubManager
-from src.search.book_finder import find_book
-from src.utils.formatter import Formatter
-from src.utils.logger import Logger
-from src.utils.text_utils import sanitize_filename
+from epub_pipeline.pipeline.epub_manager import EpubManager
+from epub_pipeline.search.book_finder import find_book
+from epub_pipeline.utils.formatter import Formatter
+from epub_pipeline.utils.logger import Logger
+from epub_pipeline.utils.text_utils import sanitize_filename
 
 
 def process_file(file_path):
@@ -30,7 +30,7 @@ def process_file(file_path):
     print(f"   - Author: {meta['author']}")
 
     # 2. Search
-    data, score, strategy, _ = find_book(meta)
+    data, score, strategy = find_book(meta)
 
     if data:
         Logger.info(f"2. [Search] Match Found ({score}%) via {strategy}")
@@ -71,12 +71,8 @@ def process_file(file_path):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Simulate the pipeline without modifying files."
-    )
-    parser.add_argument(
-        "path", nargs="?", default="data", help="Path to EPUB file or directory."
-    )
+    parser = argparse.ArgumentParser(description="Simulate the pipeline without modifying files.")
+    parser.add_argument("path", nargs="?", default="data", help="Path to EPUB file or directory.")
     args = parser.parse_args()
 
     if not os.path.exists(args.path):

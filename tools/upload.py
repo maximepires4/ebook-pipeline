@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-import sys
-import os
 import argparse
+import os
+import sys
 
 # Ensure project root is in path
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src import config
-from src.pipeline.drive_uploader import DriveUploader
-from src.utils.logger import Logger
+from epub_pipeline import config
+from epub_pipeline.pipeline.drive_uploader import DriveUploader
+from epub_pipeline.utils.logger import Logger
 
 
 def upload_path(path, uploader):
@@ -28,15 +28,11 @@ def upload_path(path, uploader):
                 Logger.info(f"   📄 {f}")
                 uploader.upload_to_drive(full_path)
             else:
-                Logger.warning(
-                    f"   ⚠️ Skipping subfolder: {f} (Recursive upload not supported)"
-                )
+                Logger.warning(f"   ⚠️ Skipping subfolder: {f} (Recursive upload not supported)")
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Manually upload files to the configured Google Drive folder."
-    )
+    parser = argparse.ArgumentParser(description="Manually upload files to the configured Google Drive folder.")
     parser.add_argument("path", help="File or directory to upload.")
     args = parser.parse_args()
 
@@ -53,9 +49,7 @@ def main():
         sys.exit(1)
 
     if not config.DRIVE_FOLDER_ID:
-        Logger.warning(
-            "No DRIVE_FOLDER_ID set. Files will be uploaded to the root of your Drive."
-        )
+        Logger.warning("No DRIVE_FOLDER_ID set. Files will be uploaded to the root of your Drive.")
         try:
             input("Press Enter to continue or Ctrl+C to cancel...")
         except KeyboardInterrupt:

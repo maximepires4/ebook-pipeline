@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-import sys
-import os
 import argparse
+import os
+import sys
 
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src import config
-from src.pipeline.epub_manager import EpubManager
-from src.search.book_finder import find_book
-from src.utils.formatter import Formatter
-from src.utils.logger import Logger
+from epub_pipeline import config
+from epub_pipeline.pipeline.epub_manager import EpubManager
+from epub_pipeline.search.book_finder import find_book
+from epub_pipeline.utils.formatter import Formatter
+from epub_pipeline.utils.logger import Logger
 
 
 def process_file(path):
@@ -24,24 +24,18 @@ def process_file(path):
 
     print(f"Extracted: {meta['title']} / {meta['author']} / {meta['isbn']}")
 
-    data, score, strategy, hits = find_book(meta)
+    data, score, strategy = find_book(meta)
 
     if data:
-        Formatter.print_search_result(data, score, strategy, hits)
+        Formatter.print_search_result(data, score, strategy)
     else:
         Logger.warning("No match found.")
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Test metadata search for an EPUB file."
-    )
-    parser.add_argument(
-        "path", nargs="?", default="data", help="Path to EPUB file or directory."
-    )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Show detailed search steps."
-    )
+    parser = argparse.ArgumentParser(description="Test metadata search for an EPUB file.")
+    parser.add_argument("path", nargs="?", default="data", help="Path to EPUB file or directory.")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Show detailed search steps.")
     args = parser.parse_args()
 
     config.VERBOSE = args.verbose
