@@ -71,9 +71,6 @@ ignore_missing_imports = true
 exclude = ["build/"]
 
 [tool.semantic_release]
-version_variable = [
-    "epub_pipeline/__init__.py:__version__"
-]
 version_toml = [
     "pyproject.toml:project.version"
 ]

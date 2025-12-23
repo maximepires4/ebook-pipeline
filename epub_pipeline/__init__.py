@@ -1,5 +1,3 @@
-__version__ = "1.0.0"
-
 # Utils
 from .pipeline.cover_manager import CoverManager
 from .pipeline.drive_uploader import DriveUploader
