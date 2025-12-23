@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "epub-pipeline"
-version = "1.0.0"
+version = "1.0.1"
 description = "Automated pipeline for Ebook metadata enrichment, conversion, and cloud upload."
 readme = "README.md"
 authors = [
