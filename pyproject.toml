@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "Automated pipeline for Ebook metadata enrichment, conversion, and cloud upload."
 readme = "README.md"
 authors = [
-  { name = "Maxime", email = "maxime@example.com" },
+  { name = "Maxime Pires", email = "maximepires4@gmail.com" },
 ]
 license = { text = "MIT" }
 requires-python = ">=3.12"
@@ -42,7 +42,7 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-repo/epub-pipeline"
+Homepage = "https://github.com/maximepires4/epub-pipeline"
 
 [project.scripts]
 epubpipe = "epub_pipeline.cli:main"
@@ -68,6 +68,7 @@ select = ["E", "F", "I"]  # E=Error, F=Pyflakes, I=Isort
 python_version = "3.12"
 strict = false
 ignore_missing_imports = true
+exclude = ["build/"]
 
 [tool.semantic_release]
 version_variable = [
