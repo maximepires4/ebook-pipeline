@@ -26,8 +26,8 @@ def process_file(file_path):
         return
 
     Logger.info("1. [Extraction] OK")
-    print(f"   - Title: {meta['title']}")
-    print(f"   - Author: {meta['author']}")
+    print(f"   - Title:   {meta['title']}")
+    print(f"   - Authors: {', '.join(meta['authors'])}")
 
     # 2. Search
     data, score, strategy = find_book(meta)
@@ -43,7 +43,7 @@ def process_file(file_path):
 
         # Prepare mock updated meta for renaming check
         meta["title"] = data["title"]
-        meta["author"] = str(data["authors"][0])
+        meta["authors"] = data["authors"]
         meta["date"] = data.get("publishedDate")
     else:
         Logger.warning("2. [Search] No match found.")
@@ -56,12 +56,17 @@ def process_file(file_path):
 
     # 5. Renaming Simulation
     title = sanitize_filename(meta["title"])
-    author = sanitize_filename(meta["author"])
+
+    authors = meta.get("authors", [])
+    if not authors:
+        authors = ["Unknown"]
+    author_str = "-".join([sanitize_filename(a) for a in authors[:3]])
+
     date_str = str(meta.get("date", ""))[:4]
     if not date_str or date_str == "None":
         date_str = "Unknown"
 
-    new_filename = f"{title}-{author}-{date_str}.kepub.epub"
+    new_filename = f"{title}-{author_str}-{date_str}.kepub.epub"
     Logger.info("5. [Renaming] WOULD rename to:")
     print(f"   - {new_filename}")
 

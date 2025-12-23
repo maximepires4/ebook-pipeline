@@ -66,7 +66,7 @@ class EpubManager:
         titles = self.book.get_metadata("DC", "title")
         title = titles[0][0] if titles else "Unknown"
         creators = self.book.get_metadata("DC", "creator")
-        author = creators[0][0] if creators else "Unknown"
+        authors = [c[0] for c in creators] if creators else ["Unknown"]
 
         # ISBN Extraction Strategy:
         # 1. Look for 'identifier' tags with scheme="ISBN"
@@ -80,7 +80,6 @@ class EpubManager:
                 if "scheme" in k.lower():
                     scheme = v.lower()
                     break
-            print(f"HERE scheme: {scheme}")
             if "isbn" in scheme or (
                 c_val.isdigit() and len(c_val) in [10, 13] and c_val.startswith(("978", "979", ""))
             ):
@@ -109,7 +108,7 @@ class EpubManager:
         return BookMetadata(
             filename=self.filename,
             title=title,
-            author=author,
+            authors=authors,
             isbn=isbn,
             publisher=publisher,
             language=language,

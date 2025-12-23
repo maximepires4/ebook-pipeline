@@ -3,7 +3,7 @@ from epub_pipeline.search.confidence import ConfidenceScorer
 
 class TestConfidenceScorer:
     def test_perfect_isbn_match(self):
-        local = {"isbn": "9781234567890", "title": "Test Book", "author": "John Doe"}
+        local = {"isbn": "9781234567890", "title": "Test Book", "authors": ["John Doe"]}
         remote = {
             "title": "Test Book",
             "authors": ["John Doe"],
@@ -16,7 +16,7 @@ class TestConfidenceScorer:
         assert "Matched via ISBN" in reasons[0]
 
     def test_text_match_high_confidence(self):
-        local = {"title": "The Hobbit", "author": "J.R.R. Tolkien"}
+        local = {"title": "The Hobbit", "authors": ["J.R.R. Tolkien"]}
         remote = {"title": "The Hobbit", "authors": ["J.R.R. Tolkien"]}
 
         # Text search (0 base) + Title (50) + Author (40) + Unique (10) = 100
@@ -24,7 +24,7 @@ class TestConfidenceScorer:
         assert score == 100
 
     def test_text_match_low_confidence(self):
-        local = {"title": "Hobbit", "author": "Tolkien"}
+        local = {"title": "Hobbit", "authors": ["Tolkien"]}
         remote = {"title": "The Lord of the Rings", "authors": ["J.R.R. Tolkien"]}
 
         # Title mismatch penalizes heavily
@@ -32,7 +32,7 @@ class TestConfidenceScorer:
         assert score < 60
 
     def test_ambiguous_results(self):
-        local = {"title": "History", "author": "Unknown"}
+        local = {"title": "History", "authors": ["Unknown"]}
         remote = {"title": "A History", "authors": ["Someone"]}
 
         # 1000 results -> -10 penalty

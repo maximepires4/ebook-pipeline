@@ -44,8 +44,9 @@ class OpenLibraryProvider(MetadataProvider):
         t = title.split("(")[0].split(":")[0].strip()
         params = {"title": t}
 
-        if meta.get("author") and meta.get("author") != "Unknown":
-            params["author"] = meta.get("author") or ""  # TODO: Debug author
+        authors = meta.get("authors", [])
+        if authors and authors[0] != "Unknown":
+            params["author"] = authors[0]
 
         publisher = meta.get("publisher") or ""
         if context.get("pub", False) and config.USE_PUBLISHER_IN_SEARCH and publisher:

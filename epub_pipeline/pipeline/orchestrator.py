@@ -163,8 +163,6 @@ class PipelineOrchestrator:
             ("Description", "description", "description"),
         ]
 
-        # TODO: Multiple authors
-
         for label, l_key, r_key in fields:
             local_val = clean(local_meta.get(l_key)).strip()
             remote_val = clean(remote_data.get(r_key)).strip()
@@ -189,21 +187,29 @@ class PipelineOrchestrator:
                     new_val = input("   Edit value: ").strip()
                     approved[r_key] = new_val
 
-        # TODO: Clean for multiple authors
-        # Author (List vs String)
-        local_auth = clean(local_meta.get("author"))
+        # Author (List comparison)
+        local_auths = local_meta.get("authors", [])
         remote_auths = remote_data.get("authors", [])
-        remote_auth_str = (
-            ", ".join(remote_auths) if isinstance(remote_auths, list) and remote_auths else str(remote_auths)
-        )
 
-        if local_auth != remote_auth_str and remote_auths:
-            print("   [?] Author:")
-            print(f"      Current: {local_auth}")
-            print(f"      New:     {remote_auth_str}")
-            choice = input("      Apply change? [y/N]: ").strip().lower()
+        local_str = ", ".join(local_auths)
+        remote_str = ", ".join(remote_auths)
+
+        if local_str != remote_str and remote_auths:
+            print(
+                "   [?] (Authors)",
+                termcolor.colored(f"{local_str or 'N/A'}", attrs=["bold"]),
+                "->",
+                termcolor.colored(f"{remote_str or 'N/A'}", attrs=["bold"]),
+                end=" ",
+            )
+            choice = input("[y/e/N]: ").strip().lower()
+
             if choice == "y":
                 approved["authors"] = remote_auths
+            elif choice == "e":
+                new_val = input("   Edit value (comma separated): ").strip()
+                # Split and clean
+                approved["authors"] = [a.strip() for a in new_val.split(",") if a.strip()]
 
         # Cover
         if config.UPDATE_COVER and remote_data.get("imageLinks"):
@@ -243,8 +249,7 @@ class PipelineOrchestrator:
             new_meta["title"] = online_data["title"]
 
         if "authors" in online_data:
-            auths = online_data["authors"]
-            new_meta["author"] = auths[0] if isinstance(auths, list) and auths else str(auths)
+            new_meta["authors"] = online_data["authors"]
 
         if "publishedDate" in online_data:
             new_meta["date"] = online_data["publishedDate"]
@@ -265,8 +270,17 @@ class PipelineOrchestrator:
             return input_path
 
     def _handle_renaming(self, current_path, meta):
-        title = sanitize_filename(meta["title"])
-        author = sanitize_filename(meta["author"])
+        title = sanitize_filename(meta.get("title", "Unknown"))
+
+        authors = meta.get("authors", [])
+        if not authors:
+            authors = ["Unknown"]
+
+        # Join max 3 authors, sanitized. Example: "frank-herbert-brian-herbert"
+        author_str = "-".join([sanitize_filename(a) for a in authors[:3]])
+        if len(authors) > 3:
+            author_str += "-etal"
+
         date_str = str(meta.get("date", ""))[:4]
 
         if current_path.endswith(".kepub.epub"):
@@ -275,9 +289,9 @@ class PipelineOrchestrator:
             ext = ".epub"
 
         if not date_str or date_str == "None":
-            new_filename = f"{title}_{author}{ext}"
+            new_filename = f"{title}_{author_str}{ext}"
         else:
-            new_filename = f"{title}_{author}_{date_str}{ext}"
+            new_filename = f"{title}_{author_str}_{date_str}{ext}"
         new_path = os.path.join(os.path.dirname(current_path), new_filename)
 
         if new_path != current_path:

@@ -33,10 +33,8 @@ class ConfidenceScorer:
         reasons.append(title_reason)
 
         # 3. Author Similarity
-        # TODO: check multiple authors
-        print("HERE -- check multiple authors", local_meta.get("author", ""))
         author_score, author_reason = ConfidenceScorer._score_author(
-            local_meta.get("author", ""),
+            local_meta.get("authors", []),
             remote_meta.get("authors", []),
             is_isbn=is_isbn,
         )
@@ -72,13 +70,20 @@ class ConfidenceScorer:
             return points, f"Title Similarity {int(sim * 100)}% (+{points})"
 
     @staticmethod
-    def _score_author(local, remote_list, is_isbn):
-        # Check against all authors listed in the remote result
-        best_sim = 0
-        for r_auth in remote_list:
-            s = get_similarity(local, r_auth)
-            if s > best_sim:
-                best_sim = s
+    def _score_author(local_list, remote_list, is_isbn):
+        # Allow passing string for backward compat or ease of use in tests
+        if isinstance(local_list, str):
+            local_list = [local_list]
+        if not local_list:
+            local_list = [""]
+
+        best_sim = 0.0
+        # Compare every local author against every remote author and find the BEST single match
+        for l_auth in local_list:
+            for r_auth in remote_list:
+                s = get_similarity(l_auth, r_auth)
+                if s > best_sim:
+                    best_sim = s
 
         if is_isbn:
             # Even with ISBN, if author is completely different, it's suspicious (bad metadata on provider side)

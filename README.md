@@ -10,14 +10,14 @@
 
 This pipeline extracts metadata from your EPUB files, attempts to find better metadata online (Google Books, OpenLibrary), standardizes filenames, converts to KEPUB (for Kobo e-readers), and uploads the results to Google Drive or a local folder.
 
-## 🚀 Key Features
+## Key Features
 
 *   **Smart Metadata Enrichment**:
     *   **Waterfall Search Strategy**: Prioritizes ISBN lookups (high precision) but falls back to a "relaxed" text search (Title/Author/Publisher) if no ISBN is found.
     *   **Confidence Scoring**: Calculates a reliability score (0-100%) for each match based on title similarity, author overlap, and result uniqueness.
 *   **Safety First**:
     *   **Interactive Review**: By default, low-confidence matches require your confirmation.
-    *   **Granular Control (`-i`)**: Optionally review every single field change (Title, Author, Description, etc.) before applying.
+    *   **Granular Control (-i)**: Optionally review every single field change (Title, Author, Description, etc.) before applying.
     *   **Non-Destructive**: Processes files in a temporary workspace; original files are never modified in place unless output to the same directory.
 *   **Media Management**:
     *   **High-Res Covers**: Automatically downloads and optimizes covers for e-ink screens (resizing to max 1600x2400, grayscale optimized JPEG).
@@ -27,7 +27,7 @@ This pipeline extracts metadata from your EPUB files, attempts to find better me
     *   Direct upload to **Google Drive** (ideal for use with **[KoboCloud](https://github.com/fsantini/KoboCloud)**).
     *   Resumable uploads for large files.
 
-## 🛠️ Installation
+## Installation
 
 ### 1. Prerequisites
 *   **Python 3.12+**
@@ -61,7 +61,7 @@ To enable Cloud Upload:
 4.  Download the JSON, rename it to `credentials.json`, and place it in your working directory.
 5.  Set `GOOGLE_CREDENTIALS_PATH=credentials.json` in `.env`.
 
-## 🎮 Usage
+## Usage
 
 ### Basic Usage
 Process a single file or an entire directory using the CLI command:
@@ -105,7 +105,7 @@ Just clean metadata, rename, and convert, without uploading.
 epubpipe data/ --no-upload --no-kepub
 ```
 
-## 🛠️ Debugging Tools
+## Debugging Tools
 
 The `tools/` directory contains standalone scripts to diagnose issues. You can run them as modules from the project root:
 
@@ -126,7 +126,7 @@ The `tools/` directory contains standalone scripts to diagnose issues. You can r
     python -m tools.upload data/book.epub
     ```
 
-## 💻 Development
+## Development
 
 ### Setup
 ```bash
@@ -148,6 +148,6 @@ ruff check .
 mypy .
 ```
 
-## 🔗 Credits
-*   [kepubify](https://github.com/pgaskin/kepubify) by pgaskin.
+## Credits
+*   **[kepubify](https://github.com/pgaskin/kepubify)** by pgaskin.
 *   Google Books API & OpenLibrary API.

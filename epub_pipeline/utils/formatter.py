@@ -36,7 +36,7 @@ class Formatter:
             # User view: Cleaned metadata
             curated = manager.get_curated_metadata()
             print(f"  Title:     {curated['title']}")
-            print(f"  Author:    {curated['author']}")
+            print(f"  Author:    {', '.join(curated['authors'])}")
             print(f"  ISBN:      {curated['isbn'] if curated['isbn'] else '❌ Not Found'}")
             print(f"  Publisher: {curated['publisher'] if curated['publisher'] else 'Unknown'}")
             print(f"  Language:  {curated['language'] if curated['language'] else 'Unknown'}")
@@ -113,7 +113,7 @@ class Formatter:
             ("Title", local_meta.get("title"), remote_data.get("title")),
             (
                 "Author",
-                local_meta.get("author"),
+                ", ".join(local_meta.get("authors", [])),
                 ", ".join(remote_data.get("authors", [])),
             ),
             ("Publisher", local_meta.get("publisher"), remote_data.get("publisher")),

@@ -1,8 +1,8 @@
 # Ebook Metadata Guide (EPUB)
 
-This document details the standard metadata (Dublin Core) and specific metadata (OPF/Calibre) required to build a perfectly sorted and identified digital library.
+This document details the standard metadata (Dublin Core) and specific metadata (OPF/Calibre) used by **Epub Pipeline** to build a perfectly sorted and identified digital library.
 
-## 1. Unique Identification (The Key)
+## 1. Unique Identification
 These metadata serve to link the file to a unique book record (to retrieve cover, summary, etc.).
 
 | Field | XML Tag (OPF) | Importance | Description |
@@ -13,46 +13,48 @@ These metadata serve to link the file to a unique book record (to retrieve cover
 
 ---
 
-## 2. Sorting and Organization (The Ranking)
-These metadata determine the display order in lists. Without them, "Victor Hugo" might be sorted under **V**.
+## 2. Sorting and Organization
+These metadata determine the display order in lists.
 
-### Author (Creator)
-*   **Display**: `dc:creator`
-    *   *Value*: `Yuval Noah Harari`
-*   **Sort**: `opf:file-as` (Attribute)
-    *   *Value*: `Harari, Yuval Noah`
+### Authors (Creators)
+*   **Tag**: `dc:creator`
+    *   *Example*: `Yuval Noah Harari`
+*   **Sort Attribute**: `opf:file-as`
+    *   *Example*: `Harari, Yuval Noah`
     *   *Role*: Allows sorting by Last Name.
+*   **Multiple Authors**: The pipeline supports multiple `dc:creator` tags for a single book.
 
-### Title (Title)
-*   **Display**: `dc:title`
-    *   *Value*: `The Miserables`
-*   **Sort**: `opf:file-as` (Attribute - optional but recommended)
-    *   *Value*: `Miserables, The`
+### Title
+*   **Tag**: `dc:title`
+    *   *Example*: `The Miserables`
+*   **Sort Attribute**: `opf:file-as` (Optional)
+    *   *Example*: `Miserables, The`
     *   *Role*: Allows ignoring definite/indefinite articles during sorting.
-
-### Series (Sagas)
-The Dublin Core standard does not natively handle series. Custom `<meta>` tags (de facto Calibre standard) are often used.
-*   **Series Name**: `<meta name="calibre:series" content="Harry Potter"/>`
-*   **Index**: `<meta name="calibre:series_index" content="1.0"/>`
 
 ---
 
 ## 3. Discovery and Navigation
-For search, filtering, and user experience.
 
 | Field | XML Tag | Description |
 | :--- | :--- | :--- |
-| **Subjects / Tags** | `dc:subject` | Multiple keywords (e.g., "History", "Science", "Anthropology"). |
-| **Language** | `dc:language` | ISO Code (e.g., `fr`, `en-US`). Essential for filtering by language. |
-| **Date** | `dc:date` | Publication date (often just the year or YYYY-MM-DD). |
+| **Subjects** | `dc:subject` | Multiple keywords (e.g., "History", "Science", "Anthropology"). |
+| **Language** | `dc:language` | ISO Code (e.g., `fr`, `en-US`). Essential for filtering API results. |
+| **Date** | `dc:date` | Publication date (YYYY-MM-DD or YYYY). |
 | **Description** | `dc:description` | The summary or blurb. |
 
 ---
 
-## Technical Summary for Implementation
+## Pipeline Logic
 
-When analyzing an EPUB file, the extraction priority should be:
+When analyzing an EPUB file, `epub-pipeline` follows this priority:
 
-1.  **Retrieve `dc:identifier` where `scheme="ISBN"`** -> This is the source of truth.
-2.  **Retrieve `dc:creator` AND its attribute `opf:file-as`** -> To build a clean author index.
-3.  **Retrieve `meta name="calibre:series"`** -> To group volumes.
+1.  **ISBN Extraction**:
+    *   Looks for `dc:identifier` with `scheme="ISBN"`.
+    *   Looks for `978...` pattern in `dc:identifier` values.
+    *   Looks for `978...` pattern in the **filename**.
+2.  **Author Normalization**:
+    *   Extracts all `dc:creator` tags.
+    *   Generates `file-as` attributes automatically if missing (e.g. "Name Surname" -> "Surname, Name").
+3.  **Search Strategy**:
+    *   Uses ISBN if found (High Confidence).
+    *   Falls back to Text Search (Title + First Author + Publisher) if ISBN fails.

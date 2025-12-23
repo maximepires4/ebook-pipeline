@@ -22,7 +22,7 @@ def process_file(path):
         Logger.error("Could not extract basic metadata from file.")
         return
 
-    print(f"Extracted: {meta['title']} / {meta['author']} / {meta['isbn']}")
+    print(f"Extracted: {meta['title']} / {', '.join(meta['authors'])} / {meta['isbn']}")
 
     data, score, strategy = find_book(meta)
 

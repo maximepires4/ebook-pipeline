@@ -16,7 +16,7 @@ class TestPipelineOrchestrator:
         instance.filename = "test.epub"
         instance.get_curated_metadata.return_value = {
             "title": "Test Title",
-            "author": "Test Author",
+            "authors": ["Test Author"],
             "isbn": None,
             "filename": "test.epub",
         }
@@ -63,4 +63,4 @@ class TestEpubManager:
         meta = manager.get_curated_metadata()
 
         assert meta["title"] == "Dune"
-        assert meta["author"] == "Frank Herbert"
+        assert meta["authors"] == ["Frank Herbert"]

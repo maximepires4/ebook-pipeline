@@ -92,8 +92,9 @@ class GoogleBooksProvider(MetadataProvider):
         clean_title = title.split("(")[0].split(":")[0].strip()
         parts = [f"intitle:{clean_title}"]
 
-        if meta.get("author") and meta.get("author") != "Unknown":
-            parts.append(f"inauthor:{meta.get('author')}")
+        authors = meta.get("authors", [])
+        if authors and authors[0] != "Unknown":
+            parts.append(f"inauthor:{authors[0]}")
 
         if use_pub:
             clean_pub = publisher.replace("Editions", "").strip()

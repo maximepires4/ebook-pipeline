@@ -27,7 +27,7 @@ def test_find_book_waterfall_fallback(mocker):
 
     mocker.patch("epub_pipeline.search.book_finder.get_providers", return_value=[mock_provider])
 
-    meta = {"title": "Test", "author": "Me", "isbn": "978123"}
+    meta = {"title": "Test", "authors": ["Me"], "isbn": "978123"}
 
     result, conf, strategy = find_book(meta)
 

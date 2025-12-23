@@ -18,7 +18,7 @@ class BookMetadata(TypedDict, total=False):
     """
 
     title: str
-    author: str
+    authors: List[str]
     isbn: Optional[str]
     publisher: Optional[str]
     date: Optional[str]  # Format: YYYY-MM-DD or YYYY

@@ -46,7 +46,7 @@ class TestFormatter:
         mock_manager.book = True
         mock_manager.get_curated_metadata.return_value = {
             "title": "Title",
-            "author": "Author",
+            "authors": ["Author"],
             "isbn": "123",
             "publisher": "Pub",
             "language": "en",
@@ -95,7 +95,7 @@ class TestFormatter:
         assert "Fiction" in captured.out
 
     def test_print_comparison(self, capsys):
-        local = {"title": "Old", "author": "OldAuth"}
+        local = {"title": "Old", "authors": ["OldAuth"]}
         remote = {"title": "New", "authors": ["NewAuth"]}
         Formatter.print_comparison(local, remote)
         captured = capsys.readouterr()

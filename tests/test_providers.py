@@ -40,7 +40,7 @@ class TestGoogleBooksProvider:
         assert total == 0
 
     def test_search_by_text(self, provider, requests_mock):
-        meta = {"title": "Dune", "author": "Frank Herbert"}
+        meta = {"title": "Dune", "authors": ["Frank Herbert"]}
         context = {"pub": False, "year": False}
 
         mock_response = {

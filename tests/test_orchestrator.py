@@ -35,7 +35,7 @@ def test_process_file_flow(mock_os, mock_temp, mock_shutil, mock_find, mock_epub
     manager = mock_epub_cls.return_value
     manager.get_curated_metadata.return_value = {
         "title": "Title",
-        "author": "Author",
+        "authors": ["Author"],
         "isbn": "123",
         "date": "2023-01-01",
     }
