@@ -2,8 +2,9 @@
 
 [![PyPI Version](https://img.shields.io/pypi/v/epub-pipeline?color=blue&style=flat-square)](https://pypi.org/project/epub-pipeline/)
 [![Python Version](https://img.shields.io/pypi/pyversions/epub-pipeline?style=flat-square)](https://pypi.org/project/epub-pipeline/)
-[![License](https://img.shields.io/github/license/your-username/epub-pipeline?style=flat-square)](LICENSE)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/your-username/epub-pipeline/ci.yml?branch=main&style=flat-square)](https://github.com/your-username/epub-pipeline/actions)
+[![License](https://img.shields.io/github/license/maximepires4/ebook-pipeline?style=flat-square)](LICENSE)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/maximepires4/ebook-pipeline/ci.yml?branch=main&style=flat-square)](https://github.com/maximepires4/ebook-pipeline/actions)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Code Style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 **The ultimate automated tool for curating your Ebook library.**
@@ -40,11 +41,11 @@ This pipeline extracts metadata from your EPUB files, attempts to find better me
 Clone the repository and install it in editable mode:
 
 ```bash
-git clone https://github.com/your-repo/epub-pipeline.git
-cd epub-pipeline
-pip install -e .
+git clone https://github.com/maximepires4/ebook-pipeline.git
+cd ebook-pipeline
+uv sync
 ```
-This will install the `epubpipe` command globally in your Python environment.
+This will create an isolated virtual environment (`.venv`) and install the `epubpipe` command inside it. You can run it using `uv run epubpipe`.
 
 ### 3. Configuration (.env)
 Copy the template and edit your settings:
@@ -67,10 +68,10 @@ To enable Cloud Upload:
 Process a single file or an entire directory using the CLI command:
 ```bash
 # Process all .epub files in the data/ folder
-epubpipe data/
+uv run epubpipe data/
 
 # Process a specific file
-epubpipe data/dune.epub
+uv run epubpipe data/dune.epub
 ```
 
 ### CLI Options
@@ -90,19 +91,19 @@ epubpipe data/dune.epub
 
 **1. Interactive Review (Recommended for new books)**
 ```bash
-epubpipe data/new_books/ -i
+uv run epubpipe data/new_books/ -i
 ```
 
 **2. Force specific ISBN**
 Useful if the automatic search finds the wrong edition.
 ```bash
-epubpipe data/unknown_book.epub --isbn 9780441172719
+uv run epubpipe data/unknown_book.epub --isbn 9780441172719
 ```
 
 **3. Offline / Local Only**
 Just clean metadata, rename, and convert, without uploading.
 ```bash
-epubpipe data/ --no-upload --no-kepub
+uv run epubpipe data/ --no-upload --no-kepub
 ```
 
 ## Debugging Tools
@@ -111,19 +112,19 @@ The `tools/` directory contains standalone scripts to diagnose issues. You can r
 
 *   **Inspector**: See exactly what metadata exists inside a file.
     ```bash
-    python -m tools.inspect data/book.epub --full
+    uv run python -m tools.inspect data/book.epub --full
     ```
 *   **Search Tester**: Test the search logic and see confidence scores without changing files.
     ```bash
-    python -m tools.search data/book.epub
+    uv run python -m tools.search data/book.epub
     ```
 *   **Dry Run**: Simulate the whole process (including renaming/conversion logic) without writing to disk.
     ```bash
-    python -m tools.dry_run data/
+    uv run python -m tools.dry_run data/
     ```
 *   **Manual Upload**: Upload a file or folder to Google Drive immediately.
     ```bash
-    python -m tools.upload data/book.epub
+    uv run python -m tools.upload data/book.epub
     ```
 
 ## Development
@@ -131,7 +132,7 @@ The `tools/` directory contains standalone scripts to diagnose issues. You can r
 ### Setup
 ```bash
 # Install in editable mode with dev dependencies
-pip install -e .[dev]
+uv sync
 
 # Install pre-commit hooks
 pre-commit install
@@ -139,13 +140,13 @@ pre-commit install
 
 ### Running Tests
 ```bash
-pytest
+uv run pytest
 ```
 
 ### Manual Linting
 ```bash
-ruff check .
-mypy .
+uv run ruff check .
+uv run mypy .
 ```
 
 ## Credits

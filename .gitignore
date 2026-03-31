@@ -64,3 +64,6 @@ tmp/*
 
 # Logs
 *.log
+
+# --- uv ---
+.uv
