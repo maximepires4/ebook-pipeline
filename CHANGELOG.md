@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.1.0 (2026-03-31)
+
+### Features
+
+- Migrate project and CI from pip to uv
+  ([`c93fd85`](https://github.com/maximepires4/ebook-pipeline/commit/c93fd856a84d107181906873397297fd4d2d47c8))
+
+
 ## v1.0.1 (2025-12-23)
 
 ### Bug Fixes
